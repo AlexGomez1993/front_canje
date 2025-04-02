@@ -1,7 +1,5 @@
 {
-  "/dashboard/page": "app/dashboard/page.js",
-  "/dashboard/integrations/page": "app/dashboard/integrations/page.js",
-  "/dashboard/account/page": "app/dashboard/account/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
   "/dashboard/customers/page": "app/dashboard/customers/page.js",
-  "/dashboard/settings/page": "app/dashboard/settings/page.js"
+  "/dashboard/page": "app/dashboard/page.js"
 }
