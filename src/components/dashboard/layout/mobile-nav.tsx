@@ -28,6 +28,7 @@ export interface MobileNavProps {
 
 export function MobileNav({ open, onClose }: MobileNavProps): React.JSX.Element {
   const pathname = usePathname();
+  const user: any = JSON.parse(localStorage.getItem('user')!);
 
   return (
     <Drawer
@@ -77,7 +78,7 @@ export function MobileNav({ open, onClose }: MobileNavProps): React.JSX.Element 
               Usuario
             </Typography>
             <Typography color="inherit" variant="subtitle1">
-              DesarrolloCCI
+              {user ? user.nombre + ' ' + user.apellidos : null}
             </Typography>
           </Box>
           <CaretUpDownIcon />
@@ -88,7 +89,6 @@ export function MobileNav({ open, onClose }: MobileNavProps): React.JSX.Element 
         {renderNavItems({ pathname, items: navItems })}
       </Box>
       <Divider sx={{ borderColor: 'var(--mui-palette-neutral-700)' }} />
-      
     </Drawer>
   );
 }
