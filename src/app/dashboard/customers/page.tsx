@@ -341,6 +341,8 @@ import {
   Typography,
 } from '@mui/material';
 
+import Coupon from '../coupon/page';
+
 interface Factura {
   local: string;
   pago: string;
@@ -399,6 +401,252 @@ export default function FacturaForm() {
   const [facturaNum, setFacturaNum] = React.useState('');
   const [ruc, setRuc] = React.useState('');
   const [openDialog, setOpenDialog] = React.useState(false);
+  const [openCouponDialog, setOpenCouponDialog] = React.useState(false); // Estado para controlar el modal del cupón
+  const [cuponData, setCuponData] = React.useState<
+    {
+      logo: string;
+      numCupon: string;
+      hoy: string;
+      cliente: {
+        nombre: string;
+        apellidos: string;
+        ruc: string;
+        telefono: string;
+        celular: string;
+        direccion: string;
+      };
+      campania: string;
+      cupones: number; // Agregar esta propiedad
+    }[]
+  >([]);
+
+  // Función para manejar el clic en el botón Guardar
+  const handleGuardar = () => {
+    const cuponesData = CAMPAÑAS_ACTIVAS.filter(
+      (campaña) => totalCuponesPorCampaña[campaña.nombre] > 0
+    ).map((campaña) => ({
+      logo: 'img/comercioLogo.png',
+      numCupon: '123456',
+      hoy: new Date().toLocaleDateString(),
+      cliente: {
+        nombre: 'Jean',
+        apellidos: 'Scala',
+        ruc: '1234567890',
+        telefono: '022222222',
+        celular: '0999999999',
+        direccion: 'SCALA SHOPPING',
+      },
+      campania: campaña.nombre,
+      cupones: totalCuponesPorCampaña[campaña.nombre],
+    }));
+  
+    setCuponData(cuponesData);
+    setOpenCouponDialog(true);
+  };
+
+  // Función para imprimir el cupón
+  // const handleImprimirCupon = () => {
+  //   window.print(); // Imprimir el cupón
+  // };
+  // const handleImprimirCupon = () => {
+  //   const printWindow = window.open('', '', 'width=1800,height=800');
+  //   if (printWindow) {
+  //     printWindow.document.write(`
+  //       <html>
+  //         <head>
+  //           <title>Imprimir Cupón</title>
+  //           <style>
+  //             @media print {
+  //               body { margin: 0; padding: 0; }
+  //               .coupon {
+  //                 border: 2px dashed #000;
+  //                 border-radius: 10px;
+  //                 padding: 20px;
+  //                 max-width: 400px;
+  //                 margin: 20px auto;
+  //                 font-family: Arial, sans-serif;
+  //               }
+  //               button { display: none; }
+  //             }
+  //           </style>
+  //         </head>
+  //         <body>
+  //           ${cuponData.map(data => `
+  //             <div class="coupon">
+  //               <div style="text-align: center;">
+  //                 <img src="${data.logo}" alt="Logo" style="width: 50px;" />
+  //               </div>
+  //               <h2 style="text-align: center;">SCALA SHOPPING</h2>
+  //               <div>
+  //                 <p><strong>NÚMERO DE CUPÓN:</strong> ${data.numCupon}</p>
+  //                 <p><strong>FECHA:</strong> ${data.hoy}</p>
+  //                 <p><strong>CLIENTE:</strong> ${data.cliente.nombre} ${data.cliente.apellidos}</p>
+  //                 <p><strong>CI/RUC:</strong> ${data.cliente.ruc}</p>
+  //                 <p><strong>TELÉFONO:</strong> ${data.cliente.telefono}</p>
+  //                 <p><strong>CELULAR:</strong> ${data.cliente.celular}</p>
+  //                 <p><strong>DIRECCIÓN:</strong> ${data.cliente.direccion}</p>
+  //                 <p><strong>CAMPAÑA:</strong> ${data.campania}</p>
+  //                 <p><strong>CUPONES:</strong> ${data.cupones}</p>
+  //               </div>
+  //               <div style="margin-top: 10px;">
+  //                 <p><strong>Nota:</strong> Favor conservar sus facturas.</p>
+  //                 <p>
+  //                   “El cliente para participar en la promoción confiere voluntariamente sus datos personales, y autoriza a que
+  //                   los mismos sean recopilados y utilizados para las campañas del Centro Comercial, tratados de conformidad con
+  //                   la Ley Orgánica de Protección de Datos Personales. Estos no serán transferidos a terceros. Si el cliente no
+  //                   desea constar en la base de datos del centro comercial, puede solicitar su eliminación al correo
+  //                   info-scala@smo.ec.”
+  //                 </p>
+  //               </div>
+  //             </div>
+  //           `).join('')}
+  //         </body>
+  //       </html>
+  //     `);
+  //     printWindow.document.close();
+  //     printWindow.print();
+  //   }
+  // };
+  const handleImprimirCupon = () => {
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Cupones</title>
+            <style>
+              @media print {
+                @page {
+                  size: 72mm 200mm;  /* Altura para 2 cupones */
+                  margin: 0;          /* Eliminar márgenes de la página */
+                  padding: 0;
+                }
+                
+                body {
+                  margin: 0;
+                  padding: 0;
+                  -webkit-print-color-adjust: exact;
+                }
+                
+                .page-container {
+                  height: 200mm;     /* Altura total del papel */
+                  position: relative;
+                }
+  
+                .coupon {
+                  width: 68mm;
+                  height: 98mm;      /* Altura para medio papel (200mm/2 - 2mm de separación) */
+                  border: 1px dashed #000;
+                  padding: 2mm;
+                  font-family: 'Arial Narrow', sans-serif;
+                  font-size: 10px;
+                  box-sizing: border-box;
+                  overflow: hidden;
+                  position: absolute;
+                }
+  
+                .coupon:nth-child(1) {
+                  top: 0;
+                }
+  
+                .coupon:nth-child(2) {
+                  top: 100mm;      /* Posición del segundo cupón */
+                  border-top: none; /* Eliminar borde duplicado */
+                }
+  
+                /* Línea de corte horizontal */
+                .cut-line {
+                  position: absolute;
+                  top: 98mm;       /* Posición justo en la mitad */
+                  left: 0;
+                  right: 0;
+                  border-top: 1px dashed red;
+                  z-index: 1;
+                }
+  
+                img.logo {
+                  width: 30px !important;
+                  margin: 0 auto;
+                  display: block;
+                }
+                
+                h2 {
+                  font-size: 12px;
+                  text-align: center;
+                  margin: 2mm 0;
+                }
+              }
+            </style>
+          </head>
+          <body>
+            ${chunkArray(cuponData, 2).map(pair => `
+              <div class="page-container">
+                ${pair.map(data => `
+                  <div class="coupon">
+                    <div style="text-align: center; margin-bottom: 2mm;">
+                      <img src="${data.logo}" class="logo" alt="Logo">
+                    </div>
+                    <h2>SCALA SHOPPING</h2>
+                    
+                    <p><strong>N° CUPÓN:</strong> ${data.numCupon}</p>
+                    <p><strong>FECHA:</strong> ${data.hoy}</p>
+                    <p><strong>CLIENTE:</strong> ${data.cliente.nombre} ${data.cliente.apellidos}</p>
+                    <p><strong>CI/RUC:</strong> ${data.cliente.ruc}</p>
+                    <p><strong>TELÉFONO:</strong> ${data.cliente.telefono}</p>
+                    <p><strong>CELULAR:</strong> ${data.cliente.celular}</p>
+                    <p><strong>DIRECCIÓN:</strong> ${data.cliente.direccion}</p>
+                    <p><strong>CAMPAÑA:</strong> ${data.campania}</p>
+                    <p><strong>CUPONES:</strong> ${data.cupones}</p>
+                    
+                    <div class="nota">
+                      <strong>Nota:</strong> Favor conservar sus facturas.<br>
+                      “El cliente para participar en la promoción confiere voluntariamente sus datos personales, y autoriza a que
+                      los mismos sean recopilados y utilizados para las campañas del Centro Comercial, tratados de conformidad con
+                      la Ley Orgánica de Protección de Datos Personales. Estos no serán transferidos a terceros. Si el cliente no
+                      desea constar en la base de datos del centro comercial, puede solicitar su eliminación al correo
+                      info-scala@smo.ec.”
+                    </div>
+                  </div>
+                `).join('')}
+                  <div class="cut-line"></div> <!-- Línea de corte -->
+              </div>
+            `).join('')}
+          </body>
+        </html>
+      `);
+  
+      printWindow.document.close();
+      printWindow.onload = () => {
+        printWindow.print();
+        printWindow.onafterprint = () => printWindow.close();
+      };
+    }
+  };
+  
+  // Función para dividir el array en grupos de 2
+ // Define la interfaz con las propiedades necesarias
+interface CuponData {
+  numCupon: string;
+  logo: string;
+  cliente: {
+    nombre: string;
+    apellidos: string;
+    ruc: string;
+    telefono: string;
+    celular: string;
+    direccion: string;
+  };
+  campania: string;
+  cupones: number;
+  hoy: string;
+}
+
+// Luego, ajusta la función chunkArray
+const chunkArray = (arr: CuponData[], size: number): CuponData[][] => {
+  return Array.from({ length: Math.ceil(arr.length / size) }, (_, i) =>
+    arr.slice(i * size, i * size + size)
+  );
+};
   const [cliente, setCliente] = React.useState<Cliente>({
     nombres: '',
     apellidos: '',
@@ -461,10 +709,13 @@ export default function FacturaForm() {
 
   // Calculamos el total de montos y cupones por campaña
   const totalMonto = facturas.reduce((acc, f) => acc + f.monto, 0);
-  const totalCuponesPorCampaña = CAMPAÑAS_ACTIVAS.reduce((acc, campaña) => {
-    acc[campaña.nombre] = facturas.reduce((sum, f) => sum + (f.cupones[campaña.nombre] || 0), 0);
-    return acc;
-  }, {} as { [campaña: string]: number });
+  const totalCuponesPorCampaña = CAMPAÑAS_ACTIVAS.reduce(
+    (acc, campaña) => {
+      acc[campaña.nombre] = facturas.reduce((sum, f) => sum + (f.cupones[campaña.nombre] || 0), 0);
+      return acc;
+    },
+    {} as { [campaña: string]: number }
+  );
 
   return (
     <Box sx={{ p: 3 }}>
@@ -520,7 +771,9 @@ export default function FacturaForm() {
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setOpenDialog(false)}>Cancelar</Button>
-            <Button variant="contained" color="primary">Guardar</Button>
+            <Button variant="contained" color="primary">
+              Guardar
+            </Button>
           </DialogActions>
         </Dialog>
         <Grid item xs={12} sm={3}>
@@ -678,10 +931,32 @@ export default function FacturaForm() {
         <Button variant="contained" color="primary" sx={{ mr: 1 }}>
           Nuevo
         </Button>
-        <Button variant="contained" color="success">
+        <Button variant="contained" color="success" onClick={handleGuardar}>
           Guardar
         </Button>
       </Box>
+      <Dialog open={openCouponDialog} onClose={() => setOpenCouponDialog(false)} maxWidth="md">
+        <DialogTitle>Cupón Generado</DialogTitle>
+        <DialogContent>
+          {cuponData.map((data, index) => (
+            <Coupon
+              key={index}
+              logo={data.logo}
+              numCupon={data.numCupon}
+              hoy={data.hoy}
+              cliente={data.cliente}
+              campania={data.campania}
+              cupones={data.cupones}
+            />
+          ))}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenCouponDialog(false)}>Cerrar</Button>
+          <Button variant="contained" color="primary" onClick={handleImprimirCupon}>
+            Imprimir Cupón
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
