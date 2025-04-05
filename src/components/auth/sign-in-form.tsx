@@ -23,13 +23,13 @@ import { authClient } from '@/lib/auth/client';
 import { useUser } from '@/hooks/use-user';
 
 const schema = zod.object({
-  email: zod.string().min(1, { message: 'Email is required' }).email(),
+  username: zod.string().min(1, { message: 'Username is required' }),
   password: zod.string().min(1, { message: 'Password is required' }),
 });
 
 type Values = zod.infer<typeof schema>;
 
-const defaultValues = { email: 'desarrollocci@smo.ec', password: 'Secret1' } satisfies Values;
+const defaultValues = { username: 'prueba', password: '1234' } satisfies Values;
 
 export function SignInForm(): React.JSX.Element {
   const router = useRouter();
@@ -45,7 +45,7 @@ export function SignInForm(): React.JSX.Element {
     handleSubmit,
     setError,
     formState: { errors },
-  } = useForm<Values>({ defaultValues, resolver: zodResolver(schema) });
+  } = useForm<Values>({ resolver: zodResolver(schema) });
 
   const onSubmit = React.useCallback(
     async (values: Values): Promise<void> => {
@@ -73,20 +73,18 @@ export function SignInForm(): React.JSX.Element {
     <Stack spacing={4}>
       <Stack spacing={1}>
         <Typography variant="h4">Iniciar Sesión</Typography>
-        <Typography color="text.secondary" variant="body2">
-          
-        </Typography>
+        <Typography color="text.secondary" variant="body2"></Typography>
       </Stack>
       <form onSubmit={handleSubmit(onSubmit)}>
         <Stack spacing={2}>
           <Controller
             control={control}
-            name="email"
+            name="username"
             render={({ field }) => (
-              <FormControl error={Boolean(errors.email)}>
-                <InputLabel>Correo Electronico</InputLabel>
-                <OutlinedInput {...field} label="Email address" type="email" />
-                {errors.email ? <FormHelperText>{errors.email.message}</FormHelperText> : null}
+              <FormControl error={Boolean(errors.username)}>
+                <InputLabel>Username</InputLabel>
+                <OutlinedInput {...field} label="Username" />
+                {errors.username ? <FormHelperText>{errors.username.message}</FormHelperText> : null}
               </FormControl>
             )}
           />
@@ -135,7 +133,6 @@ export function SignInForm(): React.JSX.Element {
           </Button>
         </Stack>
       </form>
-     
     </Stack>
   );
 }

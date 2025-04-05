@@ -2,6 +2,8 @@
 
 import type { User } from '@/types/user';
 
+import axiosClient from '../axiosClient';
+
 function generateToken(): string {
   const arr = new Uint8Array(12);
   window.crypto.getRandomValues(arr);
@@ -28,7 +30,7 @@ export interface SignInWithOAuthParams {
 }
 
 export interface SignInWithPasswordParams {
-  email: string;
+  username: string;
   password: string;
 }
 
@@ -52,19 +54,37 @@ class AuthClient {
   }
 
   async signInWithPassword(params: SignInWithPasswordParams): Promise<{ error?: string }> {
-    const { email, password } = params;
+    const { username, password } = params;
 
-    // Make API request
+    try {
+      const response = await axiosClient.post('/api/auth/login', {
+        username,
+        password,
+      });
 
-    // We do not handle the API, so we'll check if the credentials match with the hardcoded ones.
-    if (email !== 'desarrollocci@smo.ec' || password !== 'Secret1') {
-      return { error: 'Invalid credentials' };
+      if (response.data.loginStatus === 'success') {
+        const { token, user } = response.data;
+
+        localStorage.setItem('custom-auth-token', token);
+        localStorage.setItem('user', JSON.stringify(user));
+
+        return {};
+      } else {
+        return { error: 'Login failed' };
+      }
+    } catch (err: any) {
+      console.error('Error durante la solicitud de login', err);
+
+      if (err.response) {
+        if (err.response.status === 404) {
+          return { error: err.response.data.message };
+        }
+
+        return { error: err.response?.data?.message || 'Ocurrió un error desconocido' };
+      } else {
+        return { error: 'Error al conectar con el servidor' };
+      }
     }
-
-    const token = generateToken();
-    localStorage.setItem('custom-auth-token', token);
-
-    return {};
   }
 
   async resetPassword(_: ResetPasswordParams): Promise<{ error?: string }> {
@@ -76,20 +96,23 @@ class AuthClient {
   }
 
   async getUser(): Promise<{ data?: User | null; error?: string }> {
-    // Make API request
-
-    // We do not handle the API, so just check if we have a token in localStorage.
     const token = localStorage.getItem('custom-auth-token');
 
     if (!token) {
       return { data: null };
     }
 
-    return { data: user };
+    const user = localStorage.getItem('user');
+    if (user) {
+      return { data: JSON.parse(user) };
+    }
+
+    return { data: null };
   }
 
   async signOut(): Promise<{ error?: string }> {
     localStorage.removeItem('custom-auth-token');
+    localStorage.removeItem('user');
 
     return {};
   }
