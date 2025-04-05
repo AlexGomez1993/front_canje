@@ -9,4 +9,5 @@ export const paths = {
     settings: '/dashboard/settings',
   },
   errors: { notFound: '/errors/not-found' },
+  campaigns: { list: '/campaigns/list' },
 } as const;
