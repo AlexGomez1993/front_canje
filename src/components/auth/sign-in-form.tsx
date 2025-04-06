@@ -73,9 +73,7 @@ export function SignInForm(): React.JSX.Element {
     <Stack spacing={4}>
       <Stack spacing={1}>
         <Typography variant="h4">Iniciar Sesión</Typography>
-        <Typography color="text.secondary" variant="body2">
-          
-        </Typography>
+        <Typography color="text.secondary" variant="body2"></Typography>
       </Stack>
       <form onSubmit={handleSubmit(onSubmit)}>
         <Stack spacing={2}>
@@ -135,7 +133,6 @@ export function SignInForm(): React.JSX.Element {
           </Button>
         </Stack>
       </form>
-     
     </Stack>
   );
 }

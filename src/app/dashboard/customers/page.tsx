@@ -1,322 +1,3 @@
-// 'use client';
-
-// import * as React from 'react';
-// import {
-//   Box,
-//   Button,
-//   Dialog,
-//   DialogActions,
-//   DialogContent,
-//   DialogTitle,
-//   Grid,
-//   MenuItem,
-//   Paper,
-//   Select,
-//   Table,
-//   TableBody,
-//   TableCell,
-//   TableContainer,
-//   TableHead,
-//   TableRow,
-//   TextField,
-//   Typography,
-// } from '@mui/material';
-
-// interface Factura {
-//   campaña: string;
-//   promoción: string;
-//   local: string;
-//   pago: string;
-//   factura: string;
-//   monto: number;
-//   cupones: number;
-//   montoMinimo: number;
-// }
-// interface Cliente {
-//   nombres: string;
-//   apellidos: string;
-//   ciRuc: string;
-//   email: string;
-//   direccion: string;
-//   fechaNacimiento: string;
-//   sexo: string;
-//   telefono: string;
-//   celular: string;
-//   provincia: string;
-//   ciudad: string;
-// }
-// export default function FacturaForm() {
-//   const [facturas, setFacturas] = React.useState<Factura[]>([]);
-//   const [local, setLocal] = React.useState('ADIDAS');
-//   const [monto, setMonto] = React.useState(50);
-//   const [montoMinimo, setMontoMinimo] = React.useState(50);
-//   const [pago, setPago] = React.useState('DINERS CLUB');
-//   const [facturaNum, setFacturaNum] = React.useState('');
-//   const [ruc, setRuc] = React.useState('');
-//   const [openDialog, setOpenDialog] = React.useState(false);
-//   const [cliente, setCliente] = React.useState<Cliente>({
-//     nombres: '',
-//     apellidos: '',
-//     ciRuc: '',
-//     email: '',
-//     direccion: '',
-//     fechaNacimiento: '',
-//     sexo: '',
-//     telefono: '',
-//     celular: '',
-//     provincia: 'Pichincha',
-//     ciudad: '',
-//   });
-
-//   const calcularCupones = (monto: number, pago: string) => {
-//     if (pago === 'DINERS CLUB') {
-//       return Math.floor(monto / 50) * 3;
-//     }
-//     return Math.floor(monto / 50);
-//   };
-//   const handleRucChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-//     const ruc = event.target.value;
-//     setCliente({ ...cliente, ciRuc: ruc });
-//     if (ruc.length === 10 || ruc.length === 13) {
-//       setOpenDialog(true);
-//     }
-//   };
-
-//   const handleCloseDialog = () => {
-//     setOpenDialog(false);
-//   };
-
-//   const agregarFactura = () => {
-//     if (monto > 0 && facturaNum.trim() !== '') {
-//       const nuevaFactura: Factura = {
-//         campaña: 'SAN VALENTIN 2025',
-//         promoción: 'TODOS LOS LOCALES SAN VALENTIN 2025',
-//         local,
-//         pago,
-//         factura: facturaNum,
-//         monto,
-//         cupones: calcularCupones(monto, pago),
-//         montoMinimo,
-//       };
-//       setFacturas([...facturas, nuevaFactura]);
-//       setFacturaNum(''); // Limpiar campo después de agregar
-//     }
-//   };
-
-//   const eliminarFactura = (index: number) => {
-//     setFacturas(facturas.filter((_, i) => i !== index));
-//   };
-
-//   const totalMonto = facturas.reduce((acc, f) => acc + f.monto, 0);
-//   const totalCupones = facturas.reduce((acc, f) => acc + f.cupones, 0);
-
-//   return (
-//     <Box sx={{ p: 3 }}>
-//       <Typography variant="h4" align="center" gutterBottom>
-//         Nueva Factura
-//       </Typography>
-//       <Grid container spacing={2}>
-//         <Grid item xs={12} sm={6}>
-//           <TextField fullWidth label="R.U.C." variant="outlined" onChange={handleRucChange} />
-//         </Grid>
-//         <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
-//         <DialogTitle>Nuevo Cliente</DialogTitle>
-//         <DialogContent>
-//           <Grid container spacing={2}>
-//             <Grid item xs={12} sm={6}>
-//               <TextField fullWidth label="Nombres" variant="outlined" />
-//             </Grid>
-//             <Grid item xs={12} sm={6}>
-//               <TextField fullWidth label="Apellidos" variant="outlined" />
-//             </Grid>
-//             <Grid item xs={12} sm={6}>
-//               <TextField fullWidth label="C.I./R.U.C." variant="outlined" value={cliente.ciRuc} disabled />
-//             </Grid>
-//             <Grid item xs={12} sm={6}>
-//               <TextField fullWidth label="E-mail" variant="outlined" />
-//             </Grid>
-//             <Grid item xs={12} sm={6}>
-//               <TextField fullWidth label="Dirección/Sector" variant="outlined" />
-//             </Grid>
-//             <Grid item xs={12} sm={6}>
-//               <TextField fullWidth label="Fecha Nacimiento" variant="outlined" placeholder="AAAA-MM-DD" />
-//             </Grid>
-//             <Grid item xs={12} sm={6}>
-//               <Select fullWidth>
-//                 <MenuItem value="">Seleccione...</MenuItem>
-//                 <MenuItem value="Masculino">Masculino</MenuItem>
-//                 <MenuItem value="Femenino">Femenino</MenuItem>
-//               </Select>
-//             </Grid>
-//             <Grid item xs={12} sm={6}>
-//               <TextField fullWidth label="Teléfono" variant="outlined" />
-//             </Grid>
-//             <Grid item xs={12} sm={6}>
-//               <TextField fullWidth label="Celular" variant="outlined" />
-//             </Grid>
-//             <Grid item xs={12} sm={6}>
-//               <TextField fullWidth label="Provincia" variant="outlined" defaultValue="Pichincha" disabled />
-//             </Grid>
-//             <Grid item xs={12} sm={6}>
-//               <TextField fullWidth label="Ciudad" variant="outlined" defaultValue="Quito" disabled  />
-//             </Grid>
-//           </Grid>
-//         </DialogContent>
-//         <DialogActions>
-//           <Button onClick={() => setOpenDialog(false)}>Cancelar</Button>
-//           <Button variant="contained" color="primary">Guardar</Button>
-//         </DialogActions>
-//       </Dialog>
-//         <Grid item xs={12} sm={3}>
-//           <TextField fullWidth label="Nombre" variant="outlined" defaultValue="PRUEBAS" />
-//         </Grid>
-//         <Grid item xs={12} sm={3}>
-//           <TextField fullWidth label="Apellido" variant="outlined" defaultValue="SCALA" />
-//         </Grid>
-//         <Grid item xs={12} sm={6}>
-//           <TextField fullWidth label="Correo" type="email" variant="outlined" defaultValue="jeanpsv000@gmail.com" />
-//         </Grid>
-//         <Grid item xs={12} sm={6}>
-//           <TextField fullWidth label="Dirección" variant="outlined" defaultValue="SCALA SHOPPING" />
-//         </Grid>
-//         <Grid item xs={12} sm={3}>
-//           <TextField fullWidth label="Teléfono" variant="outlined" defaultValue="022222222" />
-//         </Grid>
-//         <Grid item xs={12} sm={3}>
-//           <TextField fullWidth label="Celular" variant="outlined" defaultValue="0999999999" />
-//         </Grid>
-//         <Grid item xs={12} sm={6}>
-//           <TextField fullWidth label="Campaña" variant="outlined" defaultValue="SAN VALENTIN 2025" />
-//         </Grid>
-//         <Grid item xs={12} sm={6}>
-//           <TextField
-//             fullWidth
-//             label="Promoción"
-//             variant="outlined"
-//             defaultValue="TODOS LOS LOCALES SAN VALENTIN 2025"
-//           />
-//         </Grid>
-//         <Grid item xs={12} sm={3}>
-//           <Select fullWidth value={local} onChange={(e) => setLocal(e.target.value)}>
-//             <MenuItem value="ADIDAS">ADIDAS</MenuItem>
-//             <MenuItem value="NIKE">NIKE</MenuItem>
-//             <MenuItem value="PUMA">PUMA</MenuItem>
-//           </Select>
-//         </Grid>
-//         <Grid item xs={12} sm={3}>
-//           <TextField
-//             fullWidth
-//             label="Monto Mínimo"
-//             type="number"
-//             variant="outlined"
-//             value={montoMinimo}
-//             onChange={(e) => setMontoMinimo(Number(e.target.value))}
-//           />
-//         </Grid>
-//         <Grid item xs={12} sm={3}>
-//           <Select fullWidth value={pago} onChange={(e) => setPago(e.target.value)}>
-//             <MenuItem value="DINERS CLUB">DINERS CLUB (Triple Cupón)</MenuItem>
-//             <MenuItem value="EFECTIVO">EFECTIVO (1 cupón por $50)</MenuItem>
-//           </Select>
-//         </Grid>
-//         <Grid item xs={12} sm={3}>
-//           <TextField
-//             fullWidth
-//             label="Monto"
-//             type="number"
-//             variant="outlined"
-//             value={monto}
-//             onChange={(e) => setMonto(Number(e.target.value))}
-//           />
-//         </Grid>
-//         <Grid item xs={12} sm={3}>
-//           <TextField
-//             fullWidth
-//             label="Número de Factura"
-//             variant="outlined"
-//             value={facturaNum}
-//             onChange={(e) => setFacturaNum(e.target.value)}
-//           />
-//         </Grid>
-//         <Grid item xs={12} sm={3}>
-//           <Button fullWidth variant="contained" onClick={agregarFactura}>
-//             + AGREGAR
-//           </Button>
-//         </Grid>
-//       </Grid>
-
-//       <TableContainer component={Paper} sx={{ mt: 3 }}>
-//         <Table>
-//           <TableHead>
-//             <TableRow>
-//               <TableCell>Campaña</TableCell>
-//               <TableCell>Promoción</TableCell>
-//               <TableCell>Local</TableCell>
-//               <TableCell>Pago</TableCell>
-//               <TableCell>Factura</TableCell>
-//               <TableCell>Monto</TableCell>
-//               <TableCell>Eliminar</TableCell>
-//             </TableRow>
-//           </TableHead>
-//           <TableBody>
-//             {facturas.map((factura, index) => (
-//               <TableRow key={index}>
-//                 <TableCell>{factura.campaña}</TableCell>
-//                 <TableCell>{factura.promoción}</TableCell>
-//                 <TableCell>{factura.local}</TableCell>
-//                 <TableCell>{factura.pago}</TableCell>
-//                 <TableCell>{factura.factura}</TableCell>
-//                 <TableCell>{factura.monto.toFixed(2)}</TableCell>
-//                 <TableCell>
-//                   <Button variant="contained" color="error" onClick={() => eliminarFactura(index)}>
-//                     Eliminar
-//                   </Button>
-//                 </TableCell>
-//               </TableRow>
-//             ))}
-//           </TableBody>
-//         </Table>
-//       </TableContainer>
-//       <TableContainer component={Paper} sx={{ mt: 3, border: '2px solid red' }}>
-//         <Table>
-//           <TableHead>
-//             <TableRow>
-//               <TableCell>Promoción</TableCell>
-//               <TableCell>Monto Mín.</TableCell>
-//               <TableCell>Saldo Ant.</TableCell>
-//               <TableCell>Fac. Monto</TableCell>
-//               <TableCell>Total</TableCell>
-//               <TableCell>Cupones</TableCell>
-//               <TableCell>Saldo Nue.</TableCell>
-//             </TableRow>
-//           </TableHead>
-//           <TableBody>
-//             <TableRow>
-//               <TableCell>TODOS LOS LOCALES SAN VALENTIN 2025</TableCell>
-//               <TableCell>50.00</TableCell>
-//               <TableCell>0.00</TableCell>
-//               <TableCell>{totalMonto.toFixed(2)}</TableCell>
-//               <TableCell>{totalMonto.toFixed(2)}</TableCell>
-//               <TableCell>{totalCupones}</TableCell>
-//               <TableCell>0.00</TableCell>
-//             </TableRow>
-//           </TableBody>
-//         </Table>
-//       </TableContainer>
-//       <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
-//         <Button variant="contained" sx={{ mr: 1 }}>
-//           Cancelar
-//         </Button>
-//         <Button variant="contained" color="primary" sx={{ mr: 1 }}>
-//           Nuevo
-//         </Button>
-//         <Button variant="contained" color="success">
-//           Guardar
-//         </Button>
-//       </Box>
-//     </Box>
-//   );
-// }
 'use client';
 
 import * as React from 'react';
@@ -422,91 +103,29 @@ export default function FacturaForm() {
 
   // Función para manejar el clic en el botón Guardar
   const handleGuardar = () => {
-    const cuponesData = CAMPAÑAS_ACTIVAS.filter(
-      (campaña) => totalCuponesPorCampaña[campaña.nombre] > 0
-    ).map((campaña) => ({
-      logo: 'img/comercioLogo.png',
-      numCupon: '123456',
-      hoy: new Date().toLocaleDateString(),
-      cliente: {
-        nombre: 'Jean',
-        apellidos: 'Scala',
-        ruc: '1234567890',
-        telefono: '022222222',
-        celular: '0999999999',
-        direccion: 'SCALA SHOPPING',
-      },
-      campania: campaña.nombre,
-      cupones: totalCuponesPorCampaña[campaña.nombre],
-    }));
-  
+    const cuponesData = CAMPAÑAS_ACTIVAS.filter((campaña) => totalCuponesPorCampaña[campaña.nombre] > 0).map(
+      (campaña) => ({
+        logo: 'img/comercioLogo.png',
+        numCupon: '123456',
+        hoy: new Date().toLocaleDateString(),
+        cliente: {
+          nombre: 'Jean',
+          apellidos: 'Scala',
+          ruc: '1234567890',
+          telefono: '022222222',
+          celular: '0999999999',
+          direccion: 'SCALA SHOPPING',
+        },
+        campania: campaña.nombre,
+        cupones: totalCuponesPorCampaña[campaña.nombre],
+      })
+    );
+
     setCuponData(cuponesData);
     setOpenCouponDialog(true);
   };
 
-  // Función para imprimir el cupón
-  // const handleImprimirCupon = () => {
-  //   window.print(); // Imprimir el cupón
-  // };
-  // const handleImprimirCupon = () => {
-  //   const printWindow = window.open('', '', 'width=1800,height=800');
-  //   if (printWindow) {
-  //     printWindow.document.write(`
-  //       <html>
-  //         <head>
-  //           <title>Imprimir Cupón</title>
-  //           <style>
-  //             @media print {
-  //               body { margin: 0; padding: 0; }
-  //               .coupon {
-  //                 border: 2px dashed #000;
-  //                 border-radius: 10px;
-  //                 padding: 20px;
-  //                 max-width: 400px;
-  //                 margin: 20px auto;
-  //                 font-family: Arial, sans-serif;
-  //               }
-  //               button { display: none; }
-  //             }
-  //           </style>
-  //         </head>
-  //         <body>
-  //           ${cuponData.map(data => `
-  //             <div class="coupon">
-  //               <div style="text-align: center;">
-  //                 <img src="${data.logo}" alt="Logo" style="width: 50px;" />
-  //               </div>
-  //               <h2 style="text-align: center;">SCALA SHOPPING</h2>
-  //               <div>
-  //                 <p><strong>NÚMERO DE CUPÓN:</strong> ${data.numCupon}</p>
-  //                 <p><strong>FECHA:</strong> ${data.hoy}</p>
-  //                 <p><strong>CLIENTE:</strong> ${data.cliente.nombre} ${data.cliente.apellidos}</p>
-  //                 <p><strong>CI/RUC:</strong> ${data.cliente.ruc}</p>
-  //                 <p><strong>TELÉFONO:</strong> ${data.cliente.telefono}</p>
-  //                 <p><strong>CELULAR:</strong> ${data.cliente.celular}</p>
-  //                 <p><strong>DIRECCIÓN:</strong> ${data.cliente.direccion}</p>
-  //                 <p><strong>CAMPAÑA:</strong> ${data.campania}</p>
-  //                 <p><strong>CUPONES:</strong> ${data.cupones}</p>
-  //               </div>
-  //               <div style="margin-top: 10px;">
-  //                 <p><strong>Nota:</strong> Favor conservar sus facturas.</p>
-  //                 <p>
-  //                   “El cliente para participar en la promoción confiere voluntariamente sus datos personales, y autoriza a que
-  //                   los mismos sean recopilados y utilizados para las campañas del Centro Comercial, tratados de conformidad con
-  //                   la Ley Orgánica de Protección de Datos Personales. Estos no serán transferidos a terceros. Si el cliente no
-  //                   desea constar en la base de datos del centro comercial, puede solicitar su eliminación al correo
-  //                   info-scala@smo.ec.”
-  //                 </p>
-  //               </div>
-  //             </div>
-  //           `).join('')}
-  //         </body>
-  //       </html>
-  //     `);
-  //     printWindow.document.close();
-  //     printWindow.print();
-  //   }
-  // };
+
   const handleImprimirCupon = () => {
     const printWindow = window.open('', '_blank');
     if (printWindow) {
@@ -517,75 +136,95 @@ export default function FacturaForm() {
             <style>
               @media print {
                 @page {
-                  size: 72mm 200mm;  /* Altura para 2 cupones */
-                  margin: 0;          /* Eliminar márgenes de la página */
-                  padding: 0;
+                  size: 72mm 200mm !important;
+                  margin: 0 !important;
+                  padding: 0 !important;
                 }
                 
                 body {
-                  margin: 0;
-                  padding: 0;
+                  margin: 0 !important;
+                  padding: 0 !important;
                   -webkit-print-color-adjust: exact;
+                  print-color-adjust: exact;
                 }
                 
                 .page-container {
-                  height: 200mm;     /* Altura total del papel */
+                  height: 200mm;
                   position: relative;
+                  overflow: hidden;
                 }
   
                 .coupon {
                   width: 68mm;
-                  height: 98mm;      /* Altura para medio papel (200mm/2 - 2mm de separación) */
-                  border: 1px dashed #000;
+                  height: 95mm;
                   padding: 2mm;
+                  margin: 2.5mm auto;
                   font-family: 'Arial Narrow', sans-serif;
-                  font-size: 10px;
+                  font-size: 8pt;
                   box-sizing: border-box;
-                  overflow: hidden;
+                  border: 1px solid #000;
+                  position: relative;
+                }
+  
+                .coupon:first-child {
+                  margin-top: 5mm;
+                }
+  
+                .coupon:last-child {
+                  margin-bottom: 5mm;
+                }
+  
+                .cut-guide {
                   position: absolute;
-                }
-  
-                .coupon:nth-child(1) {
-                  top: 0;
-                }
-  
-                .coupon:nth-child(2) {
-                  top: 100mm;      /* Posición del segundo cupón */
-                  border-top: none; /* Eliminar borde duplicado */
-                }
-  
-                /* Línea de corte horizontal */
-                .cut-line {
-                  position: absolute;
-                  top: 98mm;       /* Posición justo en la mitad */
                   left: 0;
                   right: 0;
+                  height: 0;
                   border-top: 1px dashed red;
-                  z-index: 1;
+                  z-index: 999;
+                }
+  
+                .cut-guide-top {
+                  top: 100mm;
+                }
+  
+                .cut-guide-bottom {
+                  top: 105mm;
                 }
   
                 img.logo {
-                  width: 30px !important;
-                  margin: 0 auto;
+                  width: 10mm;
+                  margin: 0 auto 2mm;
                   display: block;
                 }
                 
                 h2 {
-                  font-size: 12px;
+                  font-size: 5pt;
                   text-align: center;
-                  margin: 2mm 0;
+                  margin: 1mm 0;
+                }
+  
+                .nota {
+                  font-size: 7pt;
+                  position: absolute;
+                  bottom: 2mm;
+                  left: 2mm;
+                  right: 2mm;
                 }
               }
             </style>
           </head>
           <body>
-            ${chunkArray(cuponData, 2).map(pair => `
+            ${chunkArray(cuponData, 2)
+              .map(
+                (pair) => `
               <div class="page-container">
-                ${pair.map(data => `
+                <div class="cut-guide cut-guide-top"></div>
+                <div class="cut-guide cut-guide-bottom"></div>
+                ${pair
+                  .map(
+                    (data) => `
                   <div class="coupon">
-                    <div style="text-align: center; margin-bottom: 2mm;">
-                      <img src="${data.logo}" class="logo" alt="Logo">
-                    </div>
+                    <img src="${data.logo}" class="logo" alt="Logo">
                     <h2>SCALA SHOPPING</h2>
                     
                     <p><strong>N° CUPÓN:</strong> ${data.numCupon}</p>
@@ -601,52 +240,40 @@ export default function FacturaForm() {
                     <div class="nota">
                       <strong>Nota:</strong> Favor conservar sus facturas.<br>
                       “El cliente para participar en la promoción confiere voluntariamente sus datos personales, y autoriza a que
-                      los mismos sean recopilados y utilizados para las campañas del Centro Comercial, tratados de conformidad con
-                      la Ley Orgánica de Protección de Datos Personales. Estos no serán transferidos a terceros. Si el cliente no
-                      desea constar en la base de datos del centro comercial, puede solicitar su eliminación al correo
-                      info-scala@smo.ec.”
+                       los mismos sean recopilados y utilizados para las campañas del Centro Comercial, tratados de conformidad con
+                       la Ley Orgánica de Protección de Datos Personales. Estos no serán transferidos a terceros. Si el cliente no
+                       desea constar en la base de datos del centro comercial, puede solicitar su eliminación al correo
+                       info-scala@smo.ec.”
                     </div>
                   </div>
-                `).join('')}
-                  <div class="cut-line"></div> <!-- Línea de corte -->
+                `
+                  )
+                  .join('')}
               </div>
-            `).join('')}
+            `
+              )
+              .join('')}
           </body>
         </html>
       `);
   
       printWindow.document.close();
       printWindow.onload = () => {
-        printWindow.print();
-        printWindow.onafterprint = () => printWindow.close();
+        setTimeout(() => {
+          printWindow.print();
+          printWindow.onafterprint = () => printWindow.close();
+        }, 500);
       };
     }
   };
-  
-  // Función para dividir el array en grupos de 2
- // Define la interfaz con las propiedades necesarias
-interface CuponData {
-  numCupon: string;
-  logo: string;
-  cliente: {
-    nombre: string;
-    apellidos: string;
-    ruc: string;
-    telefono: string;
-    celular: string;
-    direccion: string;
+  const chunkArray = <T,>(arr: T[], size: number): T[][] => {
+    return arr.reduce((chunks: T[][], item: T, index: number) => {
+      if (index % size === 0) chunks.push([]);
+      chunks[chunks.length - 1].push(item);
+      return chunks;
+    }, []);
   };
-  campania: string;
-  cupones: number;
-  hoy: string;
-}
 
-// Luego, ajusta la función chunkArray
-const chunkArray = (arr: CuponData[], size: number): CuponData[][] => {
-  return Array.from({ length: Math.ceil(arr.length / size) }, (_, i) =>
-    arr.slice(i * size, i * size + size)
-  );
-};
   const [cliente, setCliente] = React.useState<Cliente>({
     nombres: '',
     apellidos: '',
