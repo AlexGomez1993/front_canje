@@ -21,6 +21,7 @@ import { navIcons } from './nav-icons';
 
 export function SideNav(): React.JSX.Element {
   const pathname = usePathname();
+  const user: any = JSON.parse(localStorage.getItem('user')!);
 
   return (
     <Box
@@ -67,10 +68,10 @@ export function SideNav(): React.JSX.Element {
         >
           <Box sx={{ flex: '1 1 auto' }}>
             <Typography color="var(--mui-palette-neutral-400)" variant="body2">
-            Usuario
+              Usuario
             </Typography>
             <Typography color="inherit" variant="subtitle1">
-            DesarrolloCCI
+              {user ? user.nombre + ' ' + user.apellidos : null}
             </Typography>
           </Box>
           <CaretUpDownIcon />
@@ -81,7 +82,6 @@ export function SideNav(): React.JSX.Element {
         {renderNavItems({ pathname, items: navItems })}
       </Box>
       <Divider sx={{ borderColor: 'var(--mui-palette-neutral-700)' }} />
-      
     </Box>
   );
 }
