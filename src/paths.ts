@@ -9,5 +9,11 @@ export const paths = {
     settings: '/dashboard/settings',
   },
   errors: { notFound: '/errors/not-found' },
-  campaigns: { list: '/campaigns/list' },
+  campaigns: { list: '/campaigns/list', create: '/campaigns/create', edit: '/campaigns/edit/:id' },
+  promotions: { list: '/promotions/list', create: '/promotions/create', edit: '/promotions/edit/:id' },
+  comercial_stores: {
+    list: '/comercial_stores/list',
+    create: '/comercial_stores/create',
+    edit: '/comercial_stores/edit/:id',
+  },
 } as const;

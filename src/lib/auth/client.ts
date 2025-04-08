@@ -57,10 +57,18 @@ class AuthClient {
     const { username, password } = params;
 
     try {
-      const response = await axiosClient.post('/api/auth/login', {
-        username,
-        password,
-      });
+      const response = await axiosClient.post(
+        '/api/auth/login',
+        {
+          username,
+          password,
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
 
       if (response.data.loginStatus === 'success') {
         const { token, user } = response.data;
