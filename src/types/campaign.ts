@@ -3,9 +3,9 @@ export interface Campaign {
   nombre: string;
   descripcion: string;
   activo: boolean;
-  configuracion: any;
-  logo: string;
-  promociones: any;
+  configuracion?: any;
+  logo?: string;
+  promociones?: any;
 }
 
 export interface CampaignResponse {

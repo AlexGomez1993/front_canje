@@ -1,9 +1,10 @@
 'use client';
-'use client';
 
 import * as React from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Alert,
+  Box,
   Button,
   CircularProgress,
   Divider,
@@ -20,6 +21,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TextField,
   Typography,
 } from '@mui/material';
 import { SelectChangeEvent } from '@mui/material/Select';
@@ -29,6 +31,7 @@ import { Campaign, CampaignResponse } from '@/types/campaign';
 import axiosClient from '@/lib/axiosClient';
 
 const CampaignsPage = () => {
+  const router = useRouter();
   const [rowsPerPage, setRowsPerPage] = React.useState(5);
   const [currentPage, setCurrentPage] = React.useState(1);
   const [campaigns, setCampaigns] = React.useState<Campaign[]>([]);
@@ -38,6 +41,7 @@ const CampaignsPage = () => {
   const [snackbarMessage, setSnackbarMessage] = React.useState('');
   const [snackbarSeverity, setSnackbarSeverity] = React.useState<'success' | 'error'>('success');
   const [totalPage, setTotalPage] = React.useState(1);
+  const [filterName, setFilterName] = React.useState<string>('');
 
   const showSnackbar = (message: string, severity: 'success' | 'error') => {
     setSnackbarMessage(message);
@@ -51,9 +55,17 @@ const CampaignsPage = () => {
 
   const toggleActivo = async (id: number) => {
     try {
-      await axiosClient.post('/api/campanias/activarCampania', {
-        idCampania: id,
-      });
+      await axiosClient.post(
+        '/api/campanias/activarCampania',
+        {
+          idCampania: id,
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
       showSnackbar('Estado de la campaña actualizado con éxito', 'success');
       await fetchCampaigns();
     } catch (error) {
@@ -69,6 +81,7 @@ const CampaignsPage = () => {
         params: {
           limit: rowsPerPage,
           page: currentPage,
+          search: filterName,
         },
       });
       setCampaigns(response.data.data);
@@ -92,30 +105,60 @@ const CampaignsPage = () => {
     setCurrentPage(newPage);
   };
 
+  const handleFilterChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setFilterName(event.target.value);
+    setCurrentPage(1);
+  };
+
   React.useEffect(() => {
     fetchCampaigns();
-  }, [currentPage, rowsPerPage]);
+  }, [currentPage, rowsPerPage, filterName]);
 
   return (
-    <Paper sx={{ padding: 2 }}>
-      <Typography
-        variant="h5"
+    <Paper sx={{ padding: 2, backgroundColor: '#f5f5f5' }}>
+      <Box
         sx={{
-          fontWeight: 'bold',
-          color: '#1976d2',
           display: 'flex',
+          justifyContent: 'space-between',
           alignItems: 'center',
           marginBottom: 2,
-          textTransform: 'uppercase',
-          letterSpacing: 1.5,
-          textShadow: '2px 2px 5px rgba(0, 0, 0, 0.2)',
         }}
       >
-        <Gift />
-        Lista de Campañas
-      </Typography>
+        <Typography
+          variant="h5"
+          sx={{
+            fontWeight: 'bold',
+            color: '#1976d2',
+            display: 'flex',
+            alignItems: 'center',
+            textTransform: 'uppercase',
+            letterSpacing: 1.5,
+            textShadow: '2px 2px 5px rgba(0, 0, 0, 0.2)',
+          }}
+        >
+          <Gift style={{ marginRight: 8 }} />
+          Lista de Campañas
+        </Typography>
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<PlusCircle size={20} />}
+          onClick={() => router.push('/campaigns/create')}
+        >
+          Agregar Campaña
+        </Button>
+      </Box>
 
       <Divider sx={{ marginBottom: 2 }} />
+      <TextField
+        label="Filtrar por nombre de campaña"
+        variant="outlined"
+        value={filterName}
+        onChange={handleFilterChange}
+        fullWidth
+        sx={{ marginBottom: 2 }}
+        size="small"
+      />
 
       <FormControl fullWidth sx={{ marginBottom: 2 }}>
         <InputLabel>Filas por página</InputLabel>
@@ -161,7 +204,7 @@ const CampaignsPage = () => {
                     </TableCell>
                     <TableCell>
                       <Button
-                        onClick={() => console.log(campaign)}
+                        onClick={() => router.push(`/campaigns/edit/${campaign.id}`)}
                         variant="text"
                         color="primary"
                         startIcon={<PencilSimple size={24} />}
