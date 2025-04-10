@@ -226,7 +226,7 @@ const CampaignsPage = () => {
                         color="secondary"
                         startIcon={<PlusCircle size={20} />}
                       >
-                        Agregar Tiendas
+                        Agregar Locales
                       </Button>
                     </TableCell>
                   </TableRow>
