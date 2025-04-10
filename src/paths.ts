@@ -22,4 +22,9 @@ export const paths = {
     create: '/comercial_stores/create',
     edit: '/comercial_stores/edit/:id',
   },
+  payment_methods: {
+    list: '/payment_methods/list',
+    create: '/payment_methods/create',
+    edit: '/payment_methods/edit/:id',
+  },
 } as const;
