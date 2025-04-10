@@ -92,10 +92,6 @@ const PromotionEditPage = ({ params }: { params: { id: string } }) => {
     router.push('/promotions/list');
   };
 
-  const handleBackClick = () => {
-    router.back();
-  };
-
   if (!promotionData) {
     return (
       <Container maxWidth="sm">
@@ -191,10 +187,6 @@ const PromotionEditPage = ({ params }: { params: { id: string } }) => {
 
           <Button type="submit" variant="contained" color="primary" fullWidth sx={{ mt: 3 }} disabled={isSubmitting}>
             Guardar Cambios
-          </Button>
-
-          <Button variant="outlined" color="secondary" fullWidth sx={{ mt: 2 }} onClick={handleBackClick}>
-            Volver
           </Button>
         </form>
       </Paper>

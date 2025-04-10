@@ -100,10 +100,6 @@ const CampaignEditPage = ({ params }: { params: { id: string } }) => {
     router.push('/campaigns/list');
   };
 
-  const handleBackClick = () => {
-    router.back();
-  };
-
   if (!campaignData) {
     return (
       <Container maxWidth="sm">
