@@ -212,7 +212,7 @@ const CampaignsPage = () => {
                     </TableCell>
                     <TableCell>
                       <Button
-                        onClick={() => console.log(`Agregar promociones para campaña ${campaign.id}`)}
+                        onClick={() => router.push(`/campaigns/addPromotions/${campaign.id}`)}
                         variant="contained"
                         color="primary"
                         startIcon={<PlusCircle size={20} />}
@@ -221,7 +221,7 @@ const CampaignsPage = () => {
                         Agregar Promociones
                       </Button>
                       <Button
-                        onClick={() => console.log(`Agregar tiendas para campaña ${campaign.id}`)}
+                        onClick={() => router.push(`/campaigns/addStores/${campaign.id}`)}
                         variant="contained"
                         color="secondary"
                         startIcon={<PlusCircle size={20} />}

@@ -9,7 +9,13 @@ export const paths = {
     settings: '/dashboard/settings',
   },
   errors: { notFound: '/errors/not-found' },
-  campaigns: { list: '/campaigns/list', create: '/campaigns/create', edit: '/campaigns/edit/:id' },
+  campaigns: {
+    list: '/campaigns/list',
+    create: '/campaigns/create',
+    edit: '/campaigns/edit/:id',
+    addPromotions: '/comercial_stores/addPromotions/:id',
+    addStores: '/comercial_stores/addStores/:id',
+  },
   promotions: { list: '/promotions/list', create: '/promotions/create', edit: '/promotions/edit/:id' },
   comercial_stores: {
     list: '/comercial_stores/list',
