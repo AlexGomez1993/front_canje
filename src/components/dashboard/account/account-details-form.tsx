@@ -22,6 +22,17 @@ const states = [
 ] as const;
 
 export function AccountDetailsForm(): React.JSX.Element {
+  const [user, setUser] = React.useState<any>(null);
+
+  React.useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+  }, []);
+  console.log(user);
+  if (!user) return <></>;
+
   return (
     <form
       onSubmit={(event) => {
@@ -35,44 +46,26 @@ export function AccountDetailsForm(): React.JSX.Element {
           <Grid container spacing={3}>
             <Grid md={6} xs={12}>
               <FormControl fullWidth required>
-                <InputLabel>Nombres</InputLabel>
-                <OutlinedInput defaultValue="Sofia" label="Nombres" name="firstName" />
+                <InputLabel shrink>Nombres</InputLabel>
+                <OutlinedInput defaultValue={user.nombre || ''} label="Nombres" name="firstName" />
               </FormControl>
             </Grid>
             <Grid md={6} xs={12}>
               <FormControl fullWidth required>
-                <InputLabel>Apellidos</InputLabel>
-                <OutlinedInput defaultValue="Rivers" label="Apellidos" name="lastName" />
+                <InputLabel shrink>Apellidos</InputLabel>
+                <OutlinedInput defaultValue={user.apellidos || ''} label="Apellidos" name="lastName" />
               </FormControl>
             </Grid>
             <Grid md={6} xs={12}>
               <FormControl fullWidth required>
-                <InputLabel>Correo Electrónico</InputLabel>
-                <OutlinedInput defaultValue="desarrollocci@smo.ec" label="Correo Electrónico" name="email" />
+                <InputLabel shrink>Correo Electrónico</InputLabel>
+                <OutlinedInput defaultValue={user.email || ''} label="Correo Electrónico" name="email" />
               </FormControl>
             </Grid>
             <Grid md={6} xs={12}>
               <FormControl fullWidth>
-                <InputLabel>Número Celular</InputLabel>
-                <OutlinedInput label="Número Celular" name="phone" type="tel" />
-              </FormControl>
-            </Grid>
-            <Grid md={6} xs={12}>
-              <FormControl fullWidth>
-                <InputLabel>State</InputLabel>
-                <Select defaultValue="New York" label="State" name="state" variant="outlined">
-                  {states.map((option) => (
-                    <MenuItem key={option.value} value={option.value}>
-                      {option.label}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid md={6} xs={12}>
-              <FormControl fullWidth>
-                <InputLabel>City</InputLabel>
-                <OutlinedInput label="City" />
+                <InputLabel shrink>Número Celular</InputLabel>
+                <OutlinedInput defaultValue={user.celular || ''} label="Número Celular" name="phone" type="tel" />
               </FormControl>
             </Grid>
           </Grid>

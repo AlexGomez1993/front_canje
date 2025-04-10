@@ -1,3 +1,5 @@
+'use client';
+
 import * as React from 'react';
 import Avatar from '@mui/material/Avatar';
 import Button from '@mui/material/Button';
@@ -9,7 +11,7 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
 export function AccountInfo(): React.JSX.Element {
-  const user = JSON.parse(localStorage.getItem('user')!);
+  const user: any = JSON.parse(localStorage.getItem('user')!);
   return (
     <Card>
       <CardContent>
