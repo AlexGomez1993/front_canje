@@ -45,7 +45,6 @@ const CampaignEditPage = ({ params }: { params: { id: string } }) => {
       try {
         const response = await axiosClient.get(`/api/campanias/${id}`);
         const data = response.data.campania;
-        console.log('Datos de la campaña:', data); // Verifica los datos
         setCampaignData(data);
         setLogoPreview(data.logo);
         setValue('nombre', data.nombre);
