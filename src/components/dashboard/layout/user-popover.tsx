@@ -1,3 +1,5 @@
+'use client';
+
 import * as React from 'react';
 import RouterLink from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -25,9 +27,17 @@ export interface UserPopoverProps {
 
 export function UserPopover({ anchorEl, onClose, open }: UserPopoverProps): React.JSX.Element {
   const { checkSession } = useUser();
-
   const router = useRouter();
-  const user = JSON.parse(localStorage.getItem('user')!);
+
+  const [user, setUser] = React.useState<any | null>(null);
+
+  React.useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+  }, []);
+
   const handleSignOut = React.useCallback(async (): Promise<void> => {
     try {
       const { error } = await authClient.signOut();
@@ -37,12 +47,8 @@ export function UserPopover({ anchorEl, onClose, open }: UserPopoverProps): Reac
         return;
       }
 
-      // Refresh the auth state
       await checkSession?.();
-
-      // UserProvider, for this case, will not refresh the router and we need to do it manually
-      router.refresh();
-      // After refresh, AuthGuard will handle the redirect
+      router.push('/auth/sign-in');
     } catch (err) {
       logger.error('Sign out error', err);
     }
@@ -56,14 +62,16 @@ export function UserPopover({ anchorEl, onClose, open }: UserPopoverProps): Reac
       open={open}
       slotProps={{ paper: { sx: { width: '240px' } } }}
     >
-      <Box sx={{ p: '16px 20px ' }}>
-        <Typography variant="subtitle1">
-          {user.nombre} {user.apellidos}
-        </Typography>
-        <Typography color="text.secondary" variant="body2">
-          {user.email}
-        </Typography>
-      </Box>
+      {user && (
+        <Box sx={{ p: '16px 20px ' }}>
+          <Typography variant="subtitle1">
+            {user.nombre} {user.apellidos}
+          </Typography>
+          <Typography color="text.secondary" variant="body2">
+            {user.email}
+          </Typography>
+        </Box>
+      )}
       <Divider />
       <MenuList disablePadding sx={{ p: '8px', '& .MuiMenuItem-root': { borderRadius: 1 } }}>
         <MenuItem component={RouterLink} href={paths.dashboard.settings} onClick={onClose}>
