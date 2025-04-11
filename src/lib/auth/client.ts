@@ -34,6 +34,10 @@ export interface SignInWithPasswordParams {
   password: string;
 }
 
+export interface SignInClientWithPasswordParams {
+  ruc: string;
+  password: string;
+}
 export interface ResetPasswordParams {
   email: string;
 }
@@ -70,6 +74,47 @@ class AuthClient {
         }
       );
 
+      if (response.data.loginStatus === 'success') {
+        const { token, user } = response.data;
+
+        localStorage.setItem('custom-auth-token', token);
+        localStorage.setItem('user', JSON.stringify(user));
+
+        return {};
+      } else {
+        return { error: 'Login failed' };
+      }
+    } catch (err: any) {
+      console.error('Error durante la solicitud de login', err);
+
+      if (err.response) {
+        if (err.response.status === 404) {
+          return { error: err.response.data.message };
+        }
+
+        return { error: err.response?.data?.message || 'Ocurrió un error desconocido' };
+      } else {
+        return { error: 'Error al conectar con el servidor' };
+      }
+    }
+  }
+
+  async signInClientWithPassword(params: SignInClientWithPasswordParams): Promise<{ error?: string }> {
+    const { ruc, password } = params;
+
+    try {
+      const response = await axiosClient.post(
+        '/api/auth/loginCliente',
+        {
+          ruc,
+          password,
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
       if (response.data.loginStatus === 'success') {
         const { token, user } = response.data;
 
