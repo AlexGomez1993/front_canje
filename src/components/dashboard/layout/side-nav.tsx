@@ -5,6 +5,7 @@ import RouterLink from 'next/link';
 import { usePathname } from 'next/navigation';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import CircularProgress from '@mui/material/CircularProgress';
 import Divider from '@mui/material/Divider';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
@@ -14,14 +15,41 @@ import { CaretUpDown as CaretUpDownIcon } from '@phosphor-icons/react/dist/ssr/C
 import type { NavItemConfig } from '@/types/nav';
 import { paths } from '@/paths';
 import { isNavItemActive } from '@/lib/is-nav-item-active';
+import { useUser } from '@/hooks/use-user';
 import { Logo } from '@/components/core/logo';
 
-import { navItems } from './config';
+import { navItemsClient, navItemsMkt, navItemsUserTI } from './config';
 import { navIcons } from './nav-icons';
 
 export function SideNav(): React.JSX.Element {
   const pathname = usePathname();
-  const user: any = JSON.parse(localStorage.getItem('user')!);
+  //const user: any = JSON.parse(localStorage.getItem('user')!);
+  const { user, error, isLoading } = useUser();
+
+  if (isLoading || !user) {
+    return (
+      <Box
+        sx={{
+          height: '100vh',
+          width: 'var(--SideNav-width)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          bgcolor: 'var(--SideNav-background)',
+        }}
+      >
+        <CircularProgress color="primary" />
+      </Box>
+    );
+  }
+  let navItems: NavItemConfig[] = [];
+  if (user?.rol_id === 1) {
+    navItems = navItemsUserTI;
+  } else if (user?.rol_id === 3) {
+    navItems = navItemsMkt;
+  } else {
+    navItems = navItemsClient;
+  }
 
   return (
     <Box
@@ -89,7 +117,6 @@ export function SideNav(): React.JSX.Element {
 function renderNavItems({ items = [], pathname }: { items?: NavItemConfig[]; pathname: string }): React.JSX.Element {
   const children = items.reduce((acc: React.ReactNode[], curr: NavItemConfig): React.ReactNode[] => {
     const { key, ...item } = curr;
-
     acc.push(<NavItem key={key} pathname={pathname} {...item} />);
 
     return acc;

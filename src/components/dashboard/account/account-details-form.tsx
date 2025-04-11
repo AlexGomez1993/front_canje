@@ -30,7 +30,6 @@ export function AccountDetailsForm(): React.JSX.Element {
       setUser(JSON.parse(storedUser));
     }
   }, []);
-  console.log(user);
   if (!user) return <></>;
 
   return (

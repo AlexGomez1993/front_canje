@@ -28,8 +28,17 @@ export function GuestGuard({ children }: GuestGuardProps): React.JSX.Element | n
     }
 
     if (user) {
-      logger.debug('[GuestGuard]: User is logged in, redirecting to dashboard');
-      router.replace(paths.dashboard.overview);
+      if (user.rol_id == 1) {
+        logger.debug('[GuestGuard]: Usuario TI Logueado, redirigiendo al Dashboard');
+        router.replace(paths.dashboard.overview);
+      } else if (user.rol_id == 3) {
+        logger.debug('[GuestGuard]: Usuario Mkt Logueado, redigiriendo al Reglamento');
+        router.replace(paths.dashboard.integrations);
+      } else {
+        logger.debug('[GuestGuard]: Cliente Logueado, redigiriendo al Inicio');
+        router.replace(paths.dashboard.account);
+      }
+
       return;
     }
 

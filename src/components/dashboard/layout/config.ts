@@ -1,7 +1,7 @@
 import type { NavItemConfig } from '@/types/nav';
 import { paths } from '@/paths';
 
-export const navItems = [
+export const navItemsUserTI = [
   { key: 'overview', title: 'Dashboard', href: paths.dashboard.overview, icon: 'chart-pie' },
   { key: 'customers', title: 'Facturas', href: paths.dashboard.customers, icon: 'file-text' },
   { key: 'online-invoices', title: 'Facturas Online', href: paths.dashboard.account, icon: 'fac-online' },
@@ -12,5 +12,15 @@ export const navItems = [
   { key: 'payment_methods', title: 'Formas de Pago', href: paths.payment_methods.list, icon: 'payment_methods' },
   { key: 'settings', title: 'Configuraciones', href: paths.dashboard.settings, icon: 'gear-six' },
   { key: 'account', title: 'Cuenta', href: paths.dashboard.account, icon: 'user' },
-  // { key: 'error', title: 'Error', href: paths.errors.notFound, icon: 'x-square' },
+] satisfies NavItemConfig[];
+
+export const navItemsClient = [
+  { key: 'overview', title: 'Dashboard', href: paths.dashboard.overview, icon: 'chart-pie' },
+  { key: 'account', title: 'Cuenta', href: paths.dashboard.account, icon: 'user' },
+] satisfies NavItemConfig[];
+
+export const navItemsMkt = [
+  { key: 'integrations', title: 'Reglamento', href: paths.dashboard.integrations, icon: 'file-text' },
+  { key: 'customers', title: 'Facturas', href: paths.dashboard.customers, icon: 'file-text' },
+  { key: 'online-invoices', title: 'Facturas Online', href: paths.dashboard.account, icon: 'fac-online' },
 ] satisfies NavItemConfig[];
