@@ -29,17 +29,16 @@ export function UserPopover({ anchorEl, onClose, open }: UserPopoverProps): Reac
   const { checkSession } = useUser();
   const router = useRouter();
 
-  const [user, setUser] = React.useState<any | null>(null);
-
-  React.useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-  }, []);
+  const { user } = useUser();
 
   const handleSignOut = React.useCallback(async (): Promise<void> => {
     try {
+      let route = '';
+      if (user?.rol_id) {
+        route = '/auth/sign-in';
+      } else {
+        route = '/auth/sign-in-client';
+      }
       const { error } = await authClient.signOut();
 
       if (error) {
@@ -48,7 +47,7 @@ export function UserPopover({ anchorEl, onClose, open }: UserPopoverProps): Reac
       }
 
       await checkSession?.();
-      router.push('/auth/sign-in');
+      router.push(route);
     } catch (err) {
       logger.error('Sign out error', err);
     }
@@ -65,10 +64,10 @@ export function UserPopover({ anchorEl, onClose, open }: UserPopoverProps): Reac
       {user && (
         <Box sx={{ p: '16px 20px ' }}>
           <Typography variant="subtitle1">
-            {user.nombre} {user.apellidos}
+            {user?.nombre} {user?.apellidos}
           </Typography>
           <Typography color="text.secondary" variant="body2">
-            {user.email}
+            {user?.email}
           </Typography>
         </Box>
       )}
