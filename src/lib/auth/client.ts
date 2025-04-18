@@ -62,7 +62,7 @@ class AuthClient {
 
     try {
       const response = await axiosClient.post(
-        '/api/auth/login',
+        `${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`,
         {
           username,
           password,
