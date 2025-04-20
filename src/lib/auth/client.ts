@@ -104,7 +104,7 @@ class AuthClient {
 
     try {
       const response = await axiosClient.post(
-        '/api/auth/loginCliente',
+        `${process.env.NEXT_PUBLIC_API_URL}/api/auth/loginCliente`,
         {
           ruc,
           password,
