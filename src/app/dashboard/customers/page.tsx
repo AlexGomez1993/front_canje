@@ -125,7 +125,6 @@ export default function FacturaForm() {
     setOpenCouponDialog(true);
   };
 
-
   const handleImprimirCupon = () => {
     const printWindow = window.open('', '_blank');
     if (printWindow) {
@@ -256,7 +255,7 @@ export default function FacturaForm() {
           </body>
         </html>
       `);
-  
+
       printWindow.document.close();
       printWindow.onload = () => {
         setTimeout(() => {
@@ -295,11 +294,108 @@ export default function FacturaForm() {
   // Concatenar montos mínimos de campañas activas
   const montosMinimosCampañas = CAMPAÑAS_ACTIVAS.map((c) => c.montoMinimo).join(' / ');
 
-  const handleRucChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const token = localStorage.getItem('custom-auth-token');
+
+  const obtenerClientePorRuc = async (ruc: string) => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/clientes/obtenerCliente?ruc=${ruc}`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error('Error al obtener cliente:', data.message);
+        return null;
+      }
+
+      return data.clienteExistente;
+    } catch (error) {
+      console.error('Error en la solicitud:', error);
+      return null;
+    }
+  };
+
+  const handleRucChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const ruc = event.target.value;
     setCliente({ ...cliente, ciRuc: ruc });
+
     if (ruc.length === 10 || ruc.length === 13) {
+      const clienteData = await obtenerClientePorRuc(ruc);
+
+      if (clienteData) {
+        setCliente({
+          ...cliente,
+          nombres: clienteData.nombre,
+          apellidos: clienteData.apellidos,
+          email: clienteData.email,
+          direccion: clienteData.direccion,
+          fechaNacimiento: clienteData.fecha_nacimiento,
+          telefono: clienteData.telefono,
+          celular: clienteData.celular,
+          ciRuc: clienteData.ruc,
+          sexo: clienteData.sexo || '',
+          provincia: clienteData.provincia || 'Pichincha',
+          ciudad: clienteData.ciudad || '',
+        });
+        return;
+      }
+
       setOpenDialog(true);
+    }
+  };
+  const handleGuardarCliente = async () => {
+    try {
+      const calcularEdad = (fecha: string | Date): number => {
+        const nacimiento = new Date(fecha);
+        const hoy = new Date();
+        let edad = hoy.getFullYear() - nacimiento.getFullYear();
+        const mes = hoy.getMonth() - nacimiento.getMonth();
+        if (mes < 0 || (mes === 0 && hoy.getDate() < nacimiento.getDate())) {
+          edad--;
+        }
+        return edad;
+      };
+      const response = await fetch('http://localhost:5000/api/clientes/isla', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ruc: cliente.ciRuc,
+          nombre: cliente.nombres,
+          apellidos: cliente.apellidos,
+          email: cliente.email,
+          direccion: cliente.direccion,
+          fecha_nacimiento:
+            typeof cliente.fechaNacimiento === 'string'
+              ? cliente.fechaNacimiento
+              : (cliente.fechaNacimiento as Date).toISOString().split('T')[0],
+          telefono: cliente.telefono,
+          celular: cliente.celular,
+          ciudad_id: 189, // puedes hacerlo dinámico si gustas
+          provincia_id: 12, // puedes hacerlo dinámico si gustas
+          sexo: cliente.sexo === 'Masculino' ? 1 : cliente.sexo === 'Femenino' ? 2 : null,
+          edad: calcularEdad(cliente.fechaNacimiento),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert('Cliente guardado correctamente');
+        setOpenDialog(false);
+      } else {
+        alert(`Error: ${data.message || 'No se pudo guardar el cliente'}`);
+      }
+    } catch (error) {
+      console.error('Error al guardar cliente:', error);
+      alert('Error al conectar con el servidor');
     }
   };
 
@@ -353,7 +449,7 @@ export default function FacturaForm() {
         <Grid item xs={12} sm={6}>
           <TextField fullWidth label="R.U.C." variant="outlined" onChange={handleRucChange} />
         </Grid>
-        <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
+        {/* <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
           <DialogTitle>Nuevo Cliente</DialogTitle>
           <DialogContent>
             <Grid container spacing={2}>
@@ -376,8 +472,12 @@ export default function FacturaForm() {
                 <TextField fullWidth label="Fecha Nacimiento" variant="outlined" placeholder="AAAA-MM-DD" />
               </Grid>
               <Grid item xs={12} sm={6}>
-                <Select fullWidth>
-                  <MenuItem value="">Seleccione...</MenuItem>
+                <Select
+                  labelId="sexo-label"
+                  value={cliente.sexo}
+                  onChange={(e) => setCliente({ ...cliente, sexo: e.target.value })}
+                  label="Sexo"
+                >
                   <MenuItem value="Masculino">Masculino</MenuItem>
                   <MenuItem value="Femenino">Femenino</MenuItem>
                 </Select>
@@ -398,29 +498,171 @@ export default function FacturaForm() {
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setOpenDialog(false)}>Cancelar</Button>
-            <Button variant="contained" color="primary">
+            <Button variant="contained" color="primary" onClick={handleGuardarCliente}>
+              Guardar
+            </Button>
+          </DialogActions>
+        </Dialog> */}
+        <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
+          <DialogTitle>Nuevo Cliente</DialogTitle>
+          <DialogContent>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Nombres"
+                  variant="outlined"
+                  value={cliente.nombres}
+                  onChange={(e) => setCliente({ ...cliente, nombres: e.target.value })}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Apellidos"
+                  variant="outlined"
+                  value={cliente.apellidos}
+                  onChange={(e) => setCliente({ ...cliente, apellidos: e.target.value })}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField fullWidth label="C.I./R.U.C." variant="outlined" value={cliente.ciRuc} disabled />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="E-mail"
+                  variant="outlined"
+                  value={cliente.email}
+                  onChange={(e) => setCliente({ ...cliente, email: e.target.value })}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Dirección/Sector"
+                  variant="outlined"
+                  value={cliente.direccion}
+                  onChange={(e) => setCliente({ ...cliente, direccion: e.target.value })}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  type="date"
+                  label="Fecha Nacimiento"
+                  variant="outlined"
+                  placeholder="AAAA-MM-DD"
+                  value={cliente.fechaNacimiento}
+                  onChange={(e) => setCliente({ ...cliente, fechaNacimiento: e.target.value })}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Select
+                  labelId="sexo-label"
+                  value={cliente.sexo}
+                  label="Sexo"
+                  onChange={(e) => setCliente({ ...cliente, sexo: e.target.value })}
+                >
+                  <MenuItem value="Masculino">Masculino</MenuItem>
+                  <MenuItem value="Femenino">Femenino</MenuItem>
+                </Select>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Teléfono"
+                  variant="outlined"
+                  value={cliente.telefono}
+                  onChange={(e) => setCliente({ ...cliente, telefono: e.target.value })}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Celular"
+                  variant="outlined"
+                  value={cliente.celular}
+                  onChange={(e) => setCliente({ ...cliente, celular: e.target.value })}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField fullWidth label="Provincia" variant="outlined" value="Pichincha" disabled />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField fullWidth label="Ciudad" variant="outlined" value="Quito" disabled />
+              </Grid>
+            </Grid>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setOpenDialog(false)}>Cancelar</Button>
+            <Button variant="contained" color="primary" onClick={handleGuardarCliente}>
               Guardar
             </Button>
           </DialogActions>
         </Dialog>
+
         <Grid item xs={12} sm={3}>
-          <TextField fullWidth label="Nombre" variant="outlined" defaultValue="PRUEBAS" />
+          <TextField
+            fullWidth
+            label="Nombre"
+            variant="outlined"
+            value={cliente.nombres}
+            onChange={(e) => setCliente({ ...cliente, nombres: e.target.value })}
+          />
         </Grid>
+
         <Grid item xs={12} sm={3}>
-          <TextField fullWidth label="Apellido" variant="outlined" defaultValue="SCALA" />
+          <TextField
+            fullWidth
+            label="Apellido"
+            variant="outlined"
+            value={cliente.apellidos}
+            onChange={(e) => setCliente({ ...cliente, apellidos: e.target.value })}
+          />
         </Grid>
+
         <Grid item xs={12} sm={6}>
-          <TextField fullWidth label="Correo" type="email" variant="outlined" defaultValue="jeanpsv000@gmail.com" />
+          <TextField
+            fullWidth
+            label="Correo"
+            type="email"
+            variant="outlined"
+            value={cliente.email}
+            onChange={(e) => setCliente({ ...cliente, email: e.target.value })}
+          />
         </Grid>
+
         <Grid item xs={12} sm={6}>
-          <TextField fullWidth label="Dirección" variant="outlined" defaultValue="SCALA SHOPPING" />
+          <TextField
+            fullWidth
+            label="Dirección"
+            variant="outlined"
+            value={cliente.direccion}
+            onChange={(e) => setCliente({ ...cliente, direccion: e.target.value })}
+          />
         </Grid>
+
         <Grid item xs={12} sm={3}>
-          <TextField fullWidth label="Teléfono" variant="outlined" defaultValue="022222222" />
+          <TextField
+            fullWidth
+            label="Teléfono"
+            variant="outlined"
+            value={cliente.telefono}
+            onChange={(e) => setCliente({ ...cliente, telefono: e.target.value })}
+          />
         </Grid>
+
         <Grid item xs={12} sm={3}>
-          <TextField fullWidth label="Celular" variant="outlined" defaultValue="0999999999" />
+          <TextField
+            fullWidth
+            label="Celular"
+            variant="outlined"
+            value={cliente.celular}
+            onChange={(e) => setCliente({ ...cliente, celular: e.target.value })}
+          />
         </Grid>
+
         <Grid item xs={12} sm={6}>
           <TextField
             fullWidth
