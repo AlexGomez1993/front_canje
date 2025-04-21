@@ -51,7 +51,17 @@ type Promocion = {
   montominimo: number;
   // otros campos...
 };
-
+type FacturaAgregada = {
+  id: string;
+  promocion: string;
+  montoMinimo: number;
+  saldoAnterior: number;
+  montoConFactor: number;
+  cupones: number;
+  total: number;
+  campania: string;
+  nuevoSaldo: number;
+};
 const FacturasTable = () => {
   const [openImageDialog, setOpenImageDialog] = useState(false);
   const [openFacturaDialog, setOpenFacturaDialog] = useState(false);
@@ -66,7 +76,10 @@ const FacturasTable = () => {
   const [selectedPromocion, setSelectedPromocion] = useState<Promocion | null>(null);
   const theme = useTheme();
   const [facturas, setFacturas] = useState<any[]>([]);
- 
+  const [facturasAgregadas, setFacturasAgregadas] = useState<any[]>([]);
+  const [formasPago, setFormasPago] = useState<any[]>([]);
+  const [formaPagoId, setFormaPagoId] = useState<number | ''>('');
+
   const eliminarFactura = (index: number) => {
     setFacturas(facturas.filter((_, i) => i !== index));
   };
@@ -96,6 +109,28 @@ const FacturasTable = () => {
     fetchFacturas();
   }, []);
   useEffect(() => {
+    const fetchFormasPago = async () => {
+      const token = localStorage.getItem('custom-auth-token');
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/formasPago`, {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const data = await response.json();
+        // Filtrar solo las activas
+        const formasActivas = data.data.filter((fp: any) => fp.activo);
+        setFormasPago(formasActivas);
+      } catch (error) {
+        console.error('Error al cargar formas de pago:', error);
+        setFormasPago([]);
+      }
+    };
+
+    fetchFormasPago();
+  }, []);
+  useEffect(() => {
     const fetchCampanias = async () => {
       const token = localStorage.getItem('custom-auth-token');
       try {
@@ -115,7 +150,129 @@ const FacturasTable = () => {
 
     fetchCampanias();
   }, []);
+  // Agrega el handler para el select
+  const handleFormaPagoChange = (event: SelectChangeEvent<number>) => {
+    setFormaPagoId(Number(event.target.value));
+  };
+  // Función para dividir el array de cupones en pares
+  const chunkArray = (arr: any[], size: number) =>
+    Array.from({ length: Math.ceil(arr.length / size) }, (_, i) => arr.slice(i * size, i * size + size));
 
+  const handleImprimirCupon = (cuponData: any[]) => {
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Cupones</title>
+            <style>
+              @media print {
+                /* Estilos existentes... */
+            </style>
+          </head>
+          <body>
+            ${chunkArray(cuponData, 2)
+              .map(
+                (pair) => `
+              <div class="page-container">
+                <div class="cut-guide cut-guide-top"></div>
+                <div class="cut-guide cut-guide-bottom"></div>
+                ${pair
+                  .map(
+                    (data) => `
+                  <div class="coupon">
+                    <img src="${data.logo}" class="logo" alt="Logo">
+                    <h2>SCALA SHOPPING</h2>
+                    
+                    <p><strong>N° CUPÓN:</strong> ${data.numCupon}</p>
+                    <p><strong>FECHA:</strong> ${data.hoy}</p>
+                    <p><strong>CLIENTE:</strong> ${data.cliente.nombre} ${data.cliente.apellidos}</p>
+                    <p><strong>CI/RUC:</strong> ${data.cliente.ruc}</p>
+                    <p><strong>TELÉFONO:</strong> ${data.cliente.telefono}</p>
+                    <p><strong>CELULAR:</strong> ${data.cliente.celular}</p>
+                    <p><strong>DIRECCIÓN:</strong> ${data.cliente.direccion}</p>
+                    <p><strong>CAMPAÑA:</strong> ${data.campania}</p>
+                    <p><strong>CUPONES:</strong> ${data.cupones}</p>
+                    
+                    <div class="nota">
+                      ${data.nota}
+                    </div>
+                  </div>
+                `
+                  )
+                  .join('')}
+              </div>
+            `
+              )
+              .join('')}
+          </body>
+        </html>
+      `);
+
+      printWindow.document.close();
+      printWindow.onload = () => {
+        setTimeout(() => {
+          printWindow.print();
+          printWindow.onafterprint = () => printWindow.close();
+        }, 500);
+      };
+    }
+  };
+  const handleAgregarFactura = () => {
+    if (!saldo || !facturaSeleccionada || !selectedPromocion || !selectedCampania || !formaPagoId) return;
+    const formaPago = formasPago.find((fp) => fp.id === formaPagoId);
+    const factor = formaPago?.factor || 1;
+    const montoFactura = Number(facturaSeleccionada.monto) ;
+    const saldoNumerico = Number(saldo);
+    const montoMinimo = Number(selectedPromocion.montominimo);
+    const total = saldoNumerico + montoFactura;
+    const cantidadCupones = (Math.floor(total / montoMinimo))* factor;
+    const nuevoSaldo = total % montoMinimo;
+
+    if (cantidadCupones > 0) {
+      const hoy = new Date().toLocaleDateString('es-ES');
+      const cuponData = Array.from({ length: cantidadCupones }, (_, index) => ({
+        numCupon: `${facturaSeleccionada.id}-${index + 1}`,
+        hoy,
+        cliente: facturaSeleccionada.cliente,
+        promocion: selectedPromocion.nombre,
+        montoMinimo: montoMinimo,
+        saldoAnterior: saldoNumerico,
+        campania: selectedCampania.nombre,
+        factor: factor, // Mostrar factor en el cupón
+        montoConFactor: montoFactura,
+        cupones: cantidadCupones,
+        total: total,
+        nuevoSaldo: nuevoSaldo,
+        logo: '/logo-scala.png',
+        nota: `Favor conservar sus facturas.<br>
+          “El cliente para participar en la promoción confiere voluntariamente sus datos personales..."`,
+      }));
+
+      //handleImprimirCupon(cuponData);
+    }
+    // Agregar al estado de facturas agregadas
+    setFacturasAgregadas((prev) => [
+      ...prev,
+      {
+        local: facturaSeleccionada?.local?.nombre || 'N/A',
+        pago: formaPago?.nombre,
+        promocion: selectedPromocion.nombre,
+        factura: facturaSeleccionada.numero,
+        monto: facturaSeleccionada.monto,
+        campania: selectedCampania.nombre,
+        montoMinimo: montoMinimo,
+        saldoAnterior: saldoNumerico,
+        montoConFactor: montoFactura,
+        cupones: cantidadCupones,
+        total: total,
+        nuevoSaldo: nuevoSaldo
+      },
+    ]);
+
+    //setOpenFacturaDialog(false);
+    // Aquí deberías añadir lógica para actualizar el estado de la factura en el backend
+  };
   const tableHeaderStyles: SxProps = {
     backgroundColor: theme.palette.primary.light,
     '& .MuiTableCell-head': {
@@ -476,6 +633,28 @@ const FacturasTable = () => {
                   disabled
                 />
               </Grid>
+              <Grid item xs={12} sm={3}>
+                <FormControl fullWidth>
+                  <InputLabel id="forma-pago-label">Forma de Pago</InputLabel>
+                  <Select
+                    labelId="forma-pago-label"
+                    value={formaPagoId}
+                    onChange={handleFormaPagoChange}
+                    label="Forma de Pago"
+                  >
+                    {formasPago.map((fp) => (
+                      <MenuItem key={fp.id} value={fp.id}>
+                        {fp.nombre}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12} sm={3}>
+                <Button variant="contained" color="success" onClick={handleAgregarFactura}>
+                  Agregar Factura
+                </Button>
+              </Grid>
             </Grid>
           )}
           {/* TABLA DETALLE FACTURAS */}
@@ -487,18 +666,18 @@ const FacturasTable = () => {
                   <TableCell>Pago</TableCell>
                   <TableCell>Factura</TableCell>
                   <TableCell>Monto</TableCell>
-                  <TableCell>Campañas</TableCell>
+                  <TableCell>Campaña</TableCell>
                   <TableCell>Eliminar</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {facturas.map((factura, index) => (
+                {facturasAgregadas.map((factura, index) => (
                   <TableRow key={index}>
                     <TableCell>{factura.local}</TableCell>
                     <TableCell>{factura.pago}</TableCell>
                     <TableCell>{factura.factura}</TableCell>
                     <TableCell>{factura.monto}</TableCell>
-                    <TableCell>Cupones</TableCell>
+                    <TableCell>{factura.campania}</TableCell>
                     <TableCell>
                       <Button variant="contained" color="error" onClick={() => eliminarFactura(index)}>
                         Eliminar
@@ -519,21 +698,25 @@ const FacturasTable = () => {
                   <TableCell>Monto Mín.</TableCell>
                   <TableCell>Saldo Ant.</TableCell>
                   <TableCell>Fac. Monto</TableCell>
+                  <TableCell>Cupones</TableCell>
                   <TableCell>Total</TableCell>
                   <TableCell>Campaña</TableCell>
                   <TableCell>Saldo Nue.</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                <TableRow>
-                  <TableCell></TableCell>
-                  <TableCell></TableCell>
-                  <TableCell>0.00</TableCell>
-                  <TableCell></TableCell>
-                  <TableCell></TableCell>
-                  <TableCell></TableCell>
-                  <TableCell>0.00</TableCell>
-                </TableRow>
+                {facturasAgregadas.map((factura) => (
+                  <TableRow key={factura.id}>
+                    <TableCell>{factura.promocion}</TableCell>
+                    <TableCell>${factura.montoMinimo}</TableCell>
+                    <TableCell>${factura.saldoAnterior}</TableCell>
+                    <TableCell>${factura.montoConFactor}</TableCell>
+                    <TableCell>{factura.cupones}</TableCell>
+                    <TableCell>${factura.total}</TableCell>
+                    <TableCell>{factura.campania}</TableCell>
+                    <TableCell>${factura.nuevoSaldo}</TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
           </TableContainer>
