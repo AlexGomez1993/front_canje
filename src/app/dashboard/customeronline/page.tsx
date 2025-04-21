@@ -28,11 +28,7 @@ const floatAnimation = keyframes`
   50% { transform: translateY(-5px); }
   100% { transform: translateY(0); }
 `;
-interface FacturaDialogProps {
-  open: boolean;
-  onClose: () => void;
-  onSubmit: (formData: FormData) => void;
-}
+
 
 interface FormData {
   campaña: string;
@@ -45,6 +41,17 @@ interface FormData {
   voucherImage: File | null;
   voucherPreview: string;
   aceptaTerminos: boolean;
+}
+interface ProcessedFormData extends Omit<FormData, 'headerImage' | 'voucherImage'> {
+  headerImage: string;
+  voucherImage: string;
+}
+
+// Actualizar las props del diálogo
+interface FacturaDialogProps {
+  open: boolean;
+  onClose: () => void;
+  onSubmit: (formData: ProcessedFormData) => void; // Debe usar ProcessedFormData
 }
 
 const StyledButton = styled(Button)(({ theme, colorvariant }: { theme?: any; colorvariant: string }) => ({
@@ -153,8 +160,29 @@ const FacturaDialog = ({ open, onClose, onSubmit }: FacturaDialogProps) => {
     }
   };
 
-  const handleSubmit = () => {
-    onSubmit(formData);
+  // const handleSubmit = () => {
+  //   onSubmit(formData);
+  //   onClose();
+  // };
+  
+  const handleSubmit = async () => {
+    const convertToBase64 = (file: File | null): Promise<string> => {
+      if (!file) return Promise.resolve('');
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = (error) => reject(error);
+      });
+    };
+  
+    const processedData: ProcessedFormData = {
+      ...formData,
+      headerImage: await convertToBase64(formData.headerImage),
+      voucherImage: await convertToBase64(formData.voucherImage),
+    };
+  
+    onSubmit(processedData);
     onClose();
   };
 
@@ -365,7 +393,7 @@ const BotonesFactura = () => {
   //   }
   // };
   
-  const handleSubmitFactura = async (formData: FormData) => {
+  const handleSubmitFactura = async (formData: ProcessedFormData) => {
     try {
       const token = localStorage.getItem('custom-auth-token');
       const userString = localStorage.getItem('user');
@@ -377,10 +405,7 @@ const BotonesFactura = () => {
       const user = JSON.parse(userString);
       const cliente_id = user.id;
       const ruc = user.ruc;
-      
-      console.log("Cliente ID:", cliente_id);
-      console.log("RUC:", ruc);
-  
+    
       const campañasSeleccionadas = [
         {
           id: 1,
@@ -389,8 +414,8 @@ const BotonesFactura = () => {
             monto: formData.monto,
             tienda_id: parseInt(formData.local),
             formapago_id: formData.formaPago === 'tarjeta' ? 4 : 3,
-            imagen: formData.headerImage?.name || '',
-            voucher: formData.voucherImage?.name || '',
+            imagen: formData.headerImage,
+            voucher: formData.voucherImage,
           }
         }
       ];

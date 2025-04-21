@@ -11,6 +11,7 @@ export const paths = {
     account: '/dashboard/account',
     customers: '/dashboard/customers',
     customeronline: '/dashboard/customeronline',
+    aprobacionline: '/dashboard/aprobacionline',
     integrations: '/dashboard/integrations',
     settings: '/dashboard/settings',
   },
