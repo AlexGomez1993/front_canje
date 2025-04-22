@@ -1009,10 +1009,17 @@ const BotonesFactura = () => {
       <Grid container spacing={4} sx={{ maxWidth: 1200, margin: 'auto' }}>
         <Grid item xs={12} sm={6} md={3}>
           <StyledButton colorvariant="blue" onClick={() => setDialogOpen(true)}>
-            <IconWrapper className="iconWrapper">
-              <StyledIcon className="icon">
-                <FilePlus weight="duotone" />
-              </StyledIcon>
+          <IconWrapper className="iconWrapper">
+              {/* Reemplazar el ícono por una imagen */}
+              <img
+                src="/assets/ingresar.png"
+                alt="Facturas Ingreso"
+                style={{
+                  width: '80px', // Ajusta el tamaño según necesites
+                  height: '80px',
+                  objectFit: 'contain',
+                }}
+              />
             </IconWrapper>
             <Typography variant="h6" textAlign="center" sx={{ fontWeight: 700 }}>
               Registrar Nueva Factura
@@ -1023,10 +1030,17 @@ const BotonesFactura = () => {
         {/* Botón Facturas Aprobadas */}
         <Grid item xs={12} sm={6} md={3}>
           <StyledButton colorvariant="green" onClick={() => setAprobadasOpen(true)}>
-            <IconWrapper className="iconWrapper">
-              <StyledIcon className="icon">
-                <CheckCircle weight="fill" />
-              </StyledIcon>
+          <IconWrapper className="iconWrapper">
+              {/* Reemplazar el ícono por una imagen */}
+              <img
+                src="/assets/aprobada.png"
+                alt="Facturas Aprobadas"
+                style={{
+                  width: '80px', // Ajusta el tamaño según necesites
+                  height: '80px',
+                  objectFit: 'contain',
+                }}
+              />
             </IconWrapper>
             <Typography variant="h6" textAlign="center" sx={{ fontWeight: 700 }}>
               Facturas Aprobadas
@@ -1036,10 +1050,17 @@ const BotonesFactura = () => {
 
         <Grid item xs={12} sm={6} md={3}>
           <StyledButton colorvariant="red" onClick={() => setPendientesOpen(true)}>
-            <IconWrapper className="iconWrapper">
-              <StyledIcon className="icon">
-                <ClockClockwise weight="duotone" />
-              </StyledIcon>
+          <IconWrapper className="iconWrapper">
+              {/* Reemplazar el ícono por una imagen */}
+              <img
+                src="/assets/pendiente.png"
+                alt="Facturas Pendientes"
+                style={{
+                  width: '80px', // Ajusta el tamaño según necesites
+                  height: '80px',
+                  objectFit: 'contain',
+                }}
+              />
             </IconWrapper>
             <Typography variant="h6" textAlign="center" sx={{ fontWeight: 700 }}>
               Facturas Pendientes
@@ -1049,9 +1070,16 @@ const BotonesFactura = () => {
         <Grid item xs={12} sm={6} md={3}>
           <StyledButton colorvariant="red" onClick={() => setRechazadasOpen(true)}>
             <IconWrapper className="iconWrapper">
-              <StyledIcon className="icon">
-                <XSquare weight="duotone" />
-              </StyledIcon>
+              {/* Reemplazar el ícono por una imagen */}
+              <img
+                src="/assets/rechazada.png"
+                alt="Facturas Rechazadas"
+                style={{
+                  width: '80px', // Ajusta el tamaño según necesites
+                  height: '80px',
+                  objectFit: 'contain',
+                }}
+              />
             </IconWrapper>
             <Typography variant="h6" textAlign="center" sx={{ fontWeight: 700 }}>
               Facturas Rechazadas
