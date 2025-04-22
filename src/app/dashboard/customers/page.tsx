@@ -1,6 +1,6 @@
 'use client';
 
-import * as React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   Button,
@@ -8,7 +8,9 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  FormControl,
   Grid,
+  InputLabel,
   MenuItem,
   Paper,
   Select,
@@ -21,6 +23,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import { SelectChangeEvent } from '@mui/material/Select';
 
 import Coupon from '../coupon/page';
 
@@ -28,9 +31,15 @@ interface Factura {
   local: string;
   pago: string;
   factura: string;
+  promocion: string;
+  campania: string;
   monto: number;
-  cupones: { [campaña: string]: number }; // Cupones por campaña
+  saldoAnterior: number;
+  montoConFactor: number;
+  cupones: number ; // Cupones por campaña
   montoMinimo: number;
+  total: number;
+  nuevoSaldo: number;
 }
 
 interface Cliente {
@@ -72,16 +81,37 @@ const CAMPAÑAS_ACTIVAS = [
     },
   },
 ];
+type Campania = {
+  id: number;
+  nombre: string;
+  promociones: Promocion[];
+  // otros campos según tu API...
+};
+
+type Promocion = {
+  id: number;
+  nombre: string;
+  montominimo: number;
+  // otros campos...
+};
 
 export default function FacturaForm() {
   const [facturas, setFacturas] = React.useState<Factura[]>([]);
   const [local, setLocal] = React.useState('ADIDAS');
   const [monto, setMonto] = React.useState(50);
-  const [montoMinimo, setMontoMinimo] = React.useState(50);
+  const [montoMinimo, setMontoMinimo] = useState<string>('');
   const [pago, setPago] = React.useState('DINERS CLUB');
   const [facturaNum, setFacturaNum] = React.useState('');
   const [ruc, setRuc] = React.useState('');
   const [openDialog, setOpenDialog] = React.useState(false);
+  const [saldo, setSaldo] = useState<number | null>(null);
+  const [loadingSaldo, setLoadingSaldo] = useState(false);
+  const [selectedCampania, setSelectedCampania] = useState<Campania | null>(null);
+  const [locales, setLocales] = useState<any[]>([]);
+  const [campanias, setCampanias] = useState<Campania[]>([]);
+  const [selectedPromocion, setSelectedPromocion] = useState<Promocion | null>(null);
+  const [formasPago, setFormasPago] = useState<any[]>([]);
+  const [formaPagoId, setFormaPagoId] = useState<number | ''>('');
   const [openCouponDialog, setOpenCouponDialog] = React.useState(false); // Estado para controlar el modal del cupón
   const [cuponData, setCuponData] = React.useState<
     {
@@ -100,29 +130,107 @@ export default function FacturaForm() {
       cupones: number; // Agregar esta propiedad
     }[]
   >([]);
+  useEffect(() => {
+    const fetchFormasPago = async () => {
+      const token = localStorage.getItem('custom-auth-token');
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/formasPago`, {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const data = await response.json();
+        // Filtrar solo las activas
+        const formasActivas = data.data.filter((fp: any) => fp.activo);
+        setFormasPago(formasActivas);
+      } catch (error) {
+        console.error('Error al cargar formas de pago:', error);
+        setFormasPago([]);
+      }
+    };
+
+    fetchFormasPago();
+  }, []);
+  const handleFormaPagoChange = (event: SelectChangeEvent<number>) => {
+    setFormaPagoId(Number(event.target.value));
+  };
+  useEffect(() => {
+    const fetchCampanias = async () => {
+      const token = localStorage.getItem('custom-auth-token');
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/campanias?activo=1`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const data = await response.json();
+        setCampanias(data.data || []);
+      } catch (error) {
+        console.error('Error al cargar campañas:', error);
+      }
+    };
+
+    fetchCampanias();
+  }, []);
 
   // Función para manejar el clic en el botón Guardar
   const handleGuardar = () => {
-    const cuponesData = CAMPAÑAS_ACTIVAS.filter((campaña) => totalCuponesPorCampaña[campaña.nombre] > 0).map(
-      (campaña) => ({
-        logo: 'img/comercioLogo.png',
-        numCupon: '123456',
-        hoy: new Date().toLocaleDateString(),
-        cliente: {
-          nombre: 'Jean',
-          apellidos: 'Scala',
-          ruc: '1234567890',
-          telefono: '022222222',
-          celular: '0999999999',
-          direccion: 'SCALA SHOPPING',
-        },
-        campania: campaña.nombre,
-        cupones: totalCuponesPorCampaña[campaña.nombre],
-      })
-    );
+    // const cuponesData = CAMPAÑAS_ACTIVAS.filter((campaña) => totalCuponesPorCampaña[campaña.nombre] > 0).map(
+    //   (campaña) => ({
+    //     logo: 'img/comercioLogo.png',
+    //     numCupon: '123456',
+    //     hoy: new Date().toLocaleDateString(),
+    //     cliente: {
+    //       nombre: 'Jean',
+    //       apellidos: 'Scala',
+    //       ruc: '1234567890',
+    //       telefono: '022222222',
+    //       celular: '0999999999',
+    //       direccion: 'SCALA SHOPPING',
+    //     },
+    //     campania: campaña.nombre,
+    //     cupones: totalCuponesPorCampaña[campaña.nombre],
+    //   })
+    // );
 
-    setCuponData(cuponesData);
-    setOpenCouponDialog(true);
+    // setCuponData(cuponesData);
+    // setOpenCouponDialog(true);
+  };
+  const handleCampaniaChange = (event: SelectChangeEvent<number>) => {
+    const campaniaId = Number(event.target.value);
+    const selected = campanias.find((c) => c.id === campaniaId) || null;
+    setSelectedCampania(selected);
+    setSelectedPromocion(null); // reset por si cambia
+    setMontoMinimo(''); // también puedes setear aquí el mínimo si quieres
+    setLocales([]); // resetea locales hasta que escojan promo
+  };
+  const handlePromocionChange = async (event: SelectChangeEvent<string>) => {
+    const selectedId = parseInt(event.target.value);
+    const promocionSeleccionada = selectedCampania?.promociones.find((p) => p.id === selectedId);
+    setSelectedPromocion(promocionSeleccionada || null);
+
+    if (promocionSeleccionada) {
+      const token = localStorage.getItem('custom-auth-token');
+      try {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/locales?promocion_id=${promocionSeleccionada.id}`,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        const data = await response.json();
+        setLocales(data.data || []);
+      } catch (error) {
+        console.error('Error al obtener locales:', error);
+        setLocales([]);
+      }
+    }
   };
 
   const handleImprimirCupon = () => {
@@ -287,12 +395,7 @@ export default function FacturaForm() {
     ciudad: '',
   });
 
-  // Concatenar nombres de campañas activas
-  const nombresCampañas = CAMPAÑAS_ACTIVAS.map((c) => c.nombre).join(' / ');
-  // Concatenar promociones de campañas activas
-  const promocionesCampañas = CAMPAÑAS_ACTIVAS.map((c) => c.promoción).join(' / ');
-  // Concatenar montos mínimos de campañas activas
-  const montosMinimosCampañas = CAMPAÑAS_ACTIVAS.map((c) => c.montoMinimo).join(' / ');
+  
 
   const token = localStorage.getItem('custom-auth-token');
 
@@ -404,41 +507,57 @@ export default function FacturaForm() {
   };
 
   const agregarFactura = () => {
-    if (monto > 0 && facturaNum.trim() !== '') {
-      const cuponesPorCampaña: { [campaña: string]: number } = {};
-
-      // Calculamos los cupones para cada campaña activa
-      CAMPAÑAS_ACTIVAS.forEach((campaña) => {
-        cuponesPorCampaña[campaña.nombre] = campaña.calcularCupones(monto, pago);
-      });
+    console.log("ingresa factura")
+    console.log("Valores faltantes:");
+    console.log("saldo:", saldo);
+    console.log("selectedPromocion:", selectedPromocion);
+    console.log("selectedCampania:", selectedCampania);
+    console.log("formaPagoId:", formaPagoId);
+    if (!selectedPromocion || !selectedCampania || !formaPagoId) return;
+   
+    const formaPago = formasPago.find((fp) => fp.id === formaPagoId);
+    const factor = formaPago?.factor || 1;
+    const montoFactura = Number(monto);
+    const saldoNumerico = Number(saldo);
+    const montoMinimo = Number(selectedPromocion.montominimo);
+    const total = saldoNumerico + montoFactura;
+    const cantidadCupones = Math.floor(total / montoMinimo) * factor;
+    const nuevoSaldo = total % montoMinimo;
 
       const nuevaFactura: Factura = {
         local,
-        pago,
         factura: facturaNum,
+        pago: formaPago?.nombre,
+        promocion: selectedPromocion.nombre,
         monto,
-        cupones: cuponesPorCampaña,
-        montoMinimo,
+        campania: selectedCampania.nombre,
+        montoMinimo: montoMinimo,
+        saldoAnterior: saldoNumerico,
+        montoConFactor: montoFactura,
+        cupones: cantidadCupones,
+        total: total,
+        nuevoSaldo: nuevoSaldo,
       };
 
-      setFacturas([...facturas, nuevaFactura]);
-      setFacturaNum(''); // Limpiar campo después de agregar
-    }
+      const nuevasFacturas = [...facturas, nuevaFactura];
+setFacturas(nuevasFacturas);
+console.log(nuevasFacturas);
+
   };
 
   const eliminarFactura = (index: number) => {
-    setFacturas(facturas.filter((_, i) => i !== index));
+    //setFacturas(facturas.filter((_, i) => i !== index));
   };
 
   // Calculamos el total de montos y cupones por campaña
-  const totalMonto = facturas.reduce((acc, f) => acc + f.monto, 0);
-  const totalCuponesPorCampaña = CAMPAÑAS_ACTIVAS.reduce(
-    (acc, campaña) => {
-      acc[campaña.nombre] = facturas.reduce((sum, f) => sum + (f.cupones[campaña.nombre] || 0), 0);
-      return acc;
-    },
-    {} as { [campaña: string]: number }
-  );
+  // const totalMonto = facturas.reduce((acc, f) => acc + f.monto, 0);
+  // const totalCuponesPorCampaña = CAMPAÑAS_ACTIVAS.reduce(
+  //   (acc, campaña) => {
+  //     acc[campaña.nombre] = facturas.reduce((sum, f) => sum + (f.cupones[campaña.nombre] || 0), 0);
+  //     return acc;
+  //   },
+  //   {} as { [campaña: string]: number }
+  // );
 
   return (
     <Box sx={{ p: 3 }}>
@@ -664,22 +783,41 @@ export default function FacturaForm() {
         </Grid>
 
         <Grid item xs={12} sm={6}>
-          <TextField
-            fullWidth
-            label="Campaña"
-            variant="outlined"
-            value={nombresCampañas} // Mostrar todas las campañas activas
-            disabled
-          />
+          <FormControl fullWidth sx={{ mt: 0.3 }}>
+            <InputLabel id="campania-label">Campaña</InputLabel>
+            <Select
+              labelId="campania-label"
+              value={selectedCampania?.id || ''}
+              onChange={handleCampaniaChange}
+              displayEmpty
+              label="Campaña" // Este 'label' hace que la etiqueta se mueva al seleccionar algo
+            >
+              {campanias.map((c) => (
+                <MenuItem key={c.id} value={c.id}>
+                  {c.nombre}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
         </Grid>
         <Grid item xs={12} sm={6}>
-          <TextField
-            fullWidth
-            label="Promoción"
-            variant="outlined"
-            value={promocionesCampañas} // Mostrar todas las promociones activas
-            disabled
-          />
+          <FormControl fullWidth sx={{ mt: 0.3 }}>
+            <InputLabel id="promocion-label">Promoción</InputLabel>
+            <Select
+              labelId="promocion-label"
+              value={selectedPromocion?.id?.toString() || ''}
+              onChange={handlePromocionChange}
+              displayEmpty
+              label="Promoción"
+              disabled={!selectedCampania}
+            >
+              {selectedCampania?.promociones.map((p) => (
+                <MenuItem key={p.id} value={p.id.toString()}>
+                  {p.nombre}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
         </Grid>
         <Grid item xs={12} sm={3}>
           <Select fullWidth value={local} onChange={(e) => setLocal(e.target.value)}>
@@ -688,20 +826,33 @@ export default function FacturaForm() {
             <MenuItem value="PUMA">PUMA</MenuItem>
           </Select>
         </Grid>
+        {selectedPromocion && (
+          <Grid item xs={12} sm={3}>
+            <TextField
+              fullWidth
+              label="Monto Mínimo"
+              variant="outlined"
+              value={`$${Number(selectedPromocion.montominimo).toFixed(2)}`}
+              disabled
+            />
+          </Grid>
+        )}
         <Grid item xs={12} sm={3}>
-          <TextField
-            fullWidth
-            label="Monto Mínimo"
-            variant="outlined"
-            value={montosMinimosCampañas} // Mostrar todos los montos mínimos
-            disabled
-          />
-        </Grid>
-        <Grid item xs={12} sm={3}>
-          <Select fullWidth value={pago} onChange={(e) => setPago(e.target.value)}>
-            <MenuItem value="DINERS CLUB">DINERS CLUB (Triple Cupón)</MenuItem>
-            <MenuItem value="EFECTIVO">EFECTIVO (1 cupón por $50)</MenuItem>
-          </Select>
+          <FormControl fullWidth>
+            <InputLabel id="forma-pago-label">Forma de Pago</InputLabel>
+            <Select
+              labelId="forma-pago-label"
+              value={formaPagoId}
+              onChange={handleFormaPagoChange}
+              label="Forma de Pago"
+            >
+              {formasPago.map((fp) => (
+                <MenuItem key={fp.id} value={fp.id}>
+                  {fp.nombre}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
         </Grid>
         <Grid item xs={12} sm={3}>
           <TextField
@@ -750,9 +901,7 @@ export default function FacturaForm() {
                 <TableCell>{factura.pago}</TableCell>
                 <TableCell>{factura.factura}</TableCell>
                 <TableCell>{factura.monto.toFixed(2)}</TableCell>
-                {CAMPAÑAS_ACTIVAS.map((campaña) => (
-                  <TableCell key={campaña.nombre}>{factura.cupones[campaña.nombre]}</TableCell>
-                ))}
+                  <TableCell></TableCell>
                 <TableCell>
                   <Button variant="contained" color="error" onClick={() => eliminarFactura(index)}>
                     Eliminar
@@ -772,22 +921,17 @@ export default function FacturaForm() {
               <TableCell>Saldo Ant.</TableCell>
               <TableCell>Fac. Monto</TableCell>
               <TableCell>Total</TableCell>
-              {CAMPAÑAS_ACTIVAS.map((campaña) => (
-                <TableCell key={campaña.nombre}>Cupones {campaña.nombre}</TableCell>
-              ))}
+              <TableCell>campania</TableCell>
               <TableCell>Saldo Nue.</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             <TableRow>
-              <TableCell>{promocionesCampañas}</TableCell>
-              <TableCell>{montosMinimosCampañas}</TableCell>
+              <TableCell></TableCell>
+              <TableCell></TableCell>
               <TableCell>0.00</TableCell>
-              <TableCell>{totalMonto.toFixed(2)}</TableCell>
-              <TableCell>{totalMonto.toFixed(2)}</TableCell>
-              {CAMPAÑAS_ACTIVAS.map((campaña) => (
-                <TableCell key={campaña.nombre}>{totalCuponesPorCampaña[campaña.nombre]}</TableCell>
-              ))}
+              <TableCell></TableCell>
+              <TableCell></TableCell>
               <TableCell>0.00</TableCell>
             </TableRow>
           </TableBody>

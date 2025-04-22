@@ -1,7 +1,8 @@
 'use client';
 
-import React, { ChangeEvent, useState } from 'react';
+import React, { ChangeEvent, useEffect, useState } from 'react';
 import {
+  Avatar,
   Box,
   Button,
   Checkbox,
@@ -20,15 +21,69 @@ import {
   styled,
   TextField,
   Typography,
+  useTheme,
 } from '@mui/material';
-import { CheckCircle, FilePlus, XSquare } from '@phosphor-icons/react';
+import CircularProgress from '@mui/material/CircularProgress';
+import Pagination from '@mui/material/Pagination';
+import Paper from '@mui/material/Paper';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
+import { CheckCircle, ClockClockwise, FilePlus, XSquare } from '@phosphor-icons/react'; // Asegúrate de importar el ícono
 
 const floatAnimation = keyframes`
   0% { transform: translateY(0); }
   50% { transform: translateY(-5px); }
   100% { transform: translateY(0); }
 `;
+interface FacturaAprobada {
+  id: number;
+  fecha_registro: string;
+  campania: string;
+  local: string;
+  numero_factura: string;
+  monto: number;
+  forma_pago: string;
+  cabecera_image: string;
+  voucher_image: string;
+  estado: string;
+  cupones: number;
+  observacion: string;
+}
+interface Factura {
+  id: number;
+  fechaRegistro: string; // o Date si ya viene como objeto Date
+  numero: string;
+  monto: number;
+  formapago_id: number;
+  imagen: string;
+  voucher: string;
+  estado: number;
+  observacion?: string;
+  campanias?: {
+    nombre: string;
+  };
+  tienda?: {
+    nombre: string;
+    numcupones?: number;
+  };
+}
 
+interface AprobadasDialogProps {
+  open: boolean;
+  onClose: () => void;
+}
+interface PendienteDialogProps {
+  open: boolean;
+  onClose: () => void;
+}
+interface RechazadasDialogProps {
+  open: boolean;
+  onClose: () => void;
+}
 
 interface FormData {
   campaña: string;
@@ -53,6 +108,25 @@ interface FacturaDialogProps {
   onClose: () => void;
   onSubmit: (formData: ProcessedFormData) => void; // Debe usar ProcessedFormData
 }
+
+const getFormaPagoNombre = (id: number): string => {
+  const formas: { [key: number]: string } = {
+    1: 'Efectivo',
+    2: 'Tarjeta Crédito',
+    3: 'Transferencia',
+    4: 'Tarjeta Débito',
+  };
+  return formas[id] || `ID ${id}`;
+};
+
+const getEstadoNombre = (estado: number): string => {
+  const estados: { [key: number]: string } = {
+    1: 'Pendiente',
+    2: 'Aprobada',
+    3: 'Rechazada',
+  };
+  return estados[estado] || `Estado ${estado}`;
+};
 
 const StyledButton = styled(Button)(({ theme, colorvariant }: { theme?: any; colorvariant: string }) => ({
   padding: theme.spacing(6),
@@ -109,7 +183,6 @@ const StyledIcon = styled('div')({
     strokeWidth: 1.5,
   },
 });
-
 const FacturaDialog = ({ open, onClose, onSubmit }: FacturaDialogProps) => {
   const [formData, setFormData] = useState<FormData>({
     campaña: '',
@@ -124,7 +197,6 @@ const FacturaDialog = ({ open, onClose, onSubmit }: FacturaDialogProps) => {
     aceptaTerminos: false,
   });
 
- 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | SelectChangeEvent<string>) => {
     const target = e.target as HTMLInputElement;
     const name = target.name;
@@ -164,7 +236,7 @@ const FacturaDialog = ({ open, onClose, onSubmit }: FacturaDialogProps) => {
   //   onSubmit(formData);
   //   onClose();
   // };
-  
+
   const handleSubmit = async () => {
     const convertToBase64 = (file: File | null): Promise<string> => {
       if (!file) return Promise.resolve('');
@@ -175,13 +247,13 @@ const FacturaDialog = ({ open, onClose, onSubmit }: FacturaDialogProps) => {
         reader.onerror = (error) => reject(error);
       });
     };
-  
+
     const processedData: ProcessedFormData = {
       ...formData,
       headerImage: await convertToBase64(formData.headerImage),
       voucherImage: await convertToBase64(formData.voucherImage),
     };
-  
+
     onSubmit(processedData);
     onClose();
   };
@@ -336,76 +408,538 @@ const FacturaDialog = ({ open, onClose, onSubmit }: FacturaDialogProps) => {
     </Dialog>
   );
 };
+const AprobadasDialog = ({ open, onClose }: AprobadasDialogProps) => {
+  const [selectedImage, setSelectedImage] = useState('');
+  const [openImageDialog, setOpenImageDialog] = useState(false);
+  const theme = useTheme();
+  const [aprobadasData, setAprobadasData] = useState<FacturaAprobada[]>([]);
 
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
+  const pageSize = 3;
+
+  const fetchAprobadas = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('custom-auth-token');
+      const userString = localStorage.getItem('user');
+
+      if (!userString) throw new Error('Usuario no autenticado');
+
+      const user = JSON.parse(userString);
+      const cliente_id = user.id;
+      const cedula = user.ruc;
+      console.log(cliente_id);
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/facturas?estadoFactura=2&campania_id=1&page=${currentPage}&limit=${pageSize}&cliente_id=${cliente_id}&ruc=${cedula}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      const result = await response.json();
+
+      const mappedData = result.data.map((factura: Factura) => ({
+        id: factura.id,
+        fecha_registro: factura.fechaRegistro,
+        campania: factura.campanias?.nombre || '',
+        local: factura.tienda?.nombre || '',
+        numero_factura: factura.numero,
+        monto: factura.monto,
+        forma_pago: getFormaPagoNombre(factura.formapago_id), // crea una función para traducir el ID
+        cabecera_image: factura.imagen,
+        voucher_image: factura.voucher,
+        estado: getEstadoNombre(factura.estado), // opcional: mapea el estado a string legible
+        cupones: factura.tienda?.numcupones || 0,
+        observacion: factura.observacion || '',
+      }));
+
+      if (!response.ok) throw new Error('Error al obtener datos');
+
+      setAprobadasData(mappedData); // usamos el mapeado
+      setTotalPages(Math.ceil(result.total / pageSize));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error desconocido');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (open) fetchAprobadas();
+  }, [open, currentPage]);
+
+  const handlePageChange = (event: React.ChangeEvent<unknown>, page: number) => {
+    setCurrentPage(page);
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
+      <DialogTitle>Facturas Aprobadas</DialogTitle>
+      <DialogContent>
+        {loading ? (
+          <Box display="flex" justifyContent="center" p={4}>
+            <CircularProgress />
+          </Box>
+        ) : error ? (
+          <Typography color="error" p={2}>
+            {error}
+          </Typography>
+        ) : (
+          <>
+            <TableContainer component={Paper}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>#</TableCell>
+                    <TableCell>Fecha y hora de registro</TableCell>
+                    <TableCell>Campaña</TableCell>
+                    <TableCell>Local</TableCell>
+                    <TableCell>Factura</TableCell>
+                    <TableCell>Monto</TableCell>
+                    <TableCell>Forma de pago</TableCell>
+                    <TableCell>Cabecera factura</TableCell>
+                    <TableCell>Voucher</TableCell>
+                    <TableCell>Estado</TableCell>
+                    <TableCell>Cupones</TableCell>
+                    <TableCell>Observación</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {aprobadasData.map((factura, index) => (
+                    <TableRow key={factura.id}>
+                      <TableCell>{(currentPage - 1) * pageSize + index + 1}</TableCell>
+                      <TableCell>{new Date(factura.fecha_registro).toLocaleString()}</TableCell>
+                      <TableCell>{factura.campania}</TableCell>
+                      <TableCell>{factura.local}</TableCell>
+                      <TableCell>{factura.numero_factura}</TableCell>
+                      <TableCell>${factura.monto}</TableCell>
+                      <TableCell>{factura.forma_pago}</TableCell>
+                      <TableCell>
+                        <Avatar
+                          variant="rounded"
+                          src={factura.cabecera_image}
+                          alt="Cabecera"
+                          sx={{
+                            width: 120,
+                            height: 120,
+                            border: `1px solid ${theme.palette.divider}`,
+                            cursor: 'pointer',
+                          }}
+                          onClick={() => {
+                            setSelectedImage(factura.cabecera_image);
+                            setOpenImageDialog(true);
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Avatar
+                          variant="rounded"
+                          src={factura.voucher_image}
+                          alt="Cabecera"
+                          sx={{
+                            width: 120,
+                            height: 120,
+                            border: `1px solid ${theme.palette.divider}`,
+                            cursor: 'pointer',
+                          }}
+                          onClick={() => {
+                            setSelectedImage(factura.voucher_image);
+                            setOpenImageDialog(true);
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell>{factura.estado}</TableCell>
+                      <TableCell>{factura.cupones}</TableCell>
+                      <TableCell>{factura.observacion}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+
+            <Box display="flex" justifyContent="center" mt={2}>
+              <Pagination count={totalPages} page={currentPage} onChange={handlePageChange} color="primary" />
+            </Box>
+          </>
+        )}
+      </DialogContent>
+      <Dialog open={openImageDialog} onClose={() => setOpenImageDialog(false)} maxWidth="md">
+        <DialogContent sx={{ p: 2 }}>
+          <img src={selectedImage} alt="Vista ampliada" style={{ maxWidth: '100%', maxHeight: '80vh' }} />
+        </DialogContent>
+      </Dialog>
+      <DialogActions>
+        <Button onClick={onClose}>Cerrar</Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
+const PendienteDialog = ({ open, onClose }: PendienteDialogProps) => {
+  const [selectedImage, setSelectedImage] = useState('');
+  const [openImageDialog, setOpenImageDialog] = useState(false);
+  const theme = useTheme();
+  const [pendientesData, setPendientesData] = useState<FacturaAprobada[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
+  const pageSize = 3;
+
+  const fetchPendientes = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('custom-auth-token');
+      const userString = localStorage.getItem('user');
+
+      if (!userString) throw new Error('Usuario no autenticado');
+
+      const user = JSON.parse(userString);
+      const cliente_id = user.id;
+      const cedula = user.ruc;
+      console.log(cliente_id);
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/facturas?estadoFactura=1&campania_id=1&page=${currentPage}&limit=${pageSize}&cliente_id=${cliente_id}&ruc=${cedula}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      const result = await response.json();
+
+      const mappedData = result.data.map((factura: Factura) => ({
+        id: factura.id,
+        fecha_registro: factura.fechaRegistro,
+        campania: factura.campanias?.nombre || '',
+        local: factura.tienda?.nombre || '',
+        numero_factura: factura.numero,
+        monto: factura.monto,
+        forma_pago: getFormaPagoNombre(factura.formapago_id), // crea una función para traducir el ID
+        cabecera_image: factura.imagen,
+        voucher_image: factura.voucher,
+        estado: getEstadoNombre(factura.estado), // opcional: mapea el estado a string legible
+        cupones: factura.tienda?.numcupones || 0,
+        observacion: factura.observacion || '',
+      }));
+
+      if (!response.ok) throw new Error('Error al obtener datos');
+
+      setPendientesData(mappedData); // usamos el mapeado
+      setTotalPages(Math.ceil(result.total / pageSize));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error desconocido');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (open) fetchPendientes();
+  }, [open, currentPage]);
+
+  const handlePageChange = (event: React.ChangeEvent<unknown>, page: number) => {
+    setCurrentPage(page);
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
+      <DialogTitle>Facturas Pendientes</DialogTitle>
+      <DialogContent>
+        {loading ? (
+          <Box display="flex" justifyContent="center" p={4}>
+            <CircularProgress />
+          </Box>
+        ) : error ? (
+          <Typography color="error" p={2}>
+            {error}
+          </Typography>
+        ) : (
+          <>
+            <TableContainer component={Paper}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>#</TableCell>
+                    <TableCell>Fecha y hora de registro</TableCell>
+                    <TableCell>Campaña</TableCell>
+                    <TableCell>Local</TableCell>
+                    <TableCell>Factura</TableCell>
+                    <TableCell>Monto</TableCell>
+                    <TableCell>Forma de pago</TableCell>
+                    <TableCell>Cabecera factura</TableCell>
+                    <TableCell>Voucher</TableCell>
+                    <TableCell>Estado</TableCell>
+                    <TableCell>Cupones</TableCell>
+                    <TableCell>Observación</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {pendientesData.map((factura, index) => (
+                    <TableRow key={factura.id}>
+                      <TableCell>{(currentPage - 1) * pageSize + index + 1}</TableCell>
+                      <TableCell>{new Date(factura.fecha_registro).toLocaleString()}</TableCell>
+                      <TableCell>{factura.campania}</TableCell>
+                      <TableCell>{factura.local}</TableCell>
+                      <TableCell>{factura.numero_factura}</TableCell>
+                      <TableCell>${factura.monto}</TableCell>
+                      <TableCell>{factura.forma_pago}</TableCell>
+                      <TableCell>
+                        <Avatar
+                          variant="rounded"
+                          src={factura.cabecera_image}
+                          alt="Cabecera"
+                          sx={{
+                            width: 120,
+                            height: 120,
+                            border: `1px solid ${theme.palette.divider}`,
+                            cursor: 'pointer',
+                          }}
+                          onClick={() => {
+                            setSelectedImage(factura.cabecera_image);
+                            setOpenImageDialog(true);
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Avatar
+                          variant="rounded"
+                          src={factura.voucher_image}
+                          alt="Cabecera"
+                          sx={{
+                            width: 120,
+                            height: 120,
+                            border: `1px solid ${theme.palette.divider}`,
+                            cursor: 'pointer',
+                          }}
+                          onClick={() => {
+                            setSelectedImage(factura.voucher_image);
+                            setOpenImageDialog(true);
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell>{factura.estado}</TableCell>
+                      <TableCell>{factura.cupones}</TableCell>
+                      <TableCell>{factura.observacion}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+
+            <Box display="flex" justifyContent="center" mt={2}>
+              <Pagination count={totalPages} page={currentPage} onChange={handlePageChange} color="primary" />
+            </Box>
+          </>
+        )}
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Cerrar</Button>
+      </DialogActions>
+      <Dialog open={openImageDialog} onClose={() => setOpenImageDialog(false)} maxWidth="md">
+        <DialogContent sx={{ p: 2 }}>
+          <img src={selectedImage} alt="Vista ampliada" style={{ maxWidth: '100%', maxHeight: '80vh' }} />
+        </DialogContent>
+      </Dialog>
+    </Dialog>
+  );
+};
+const RechazadasDialog = ({ open, onClose }: RechazadasDialogProps) => {
+  const [selectedImage, setSelectedImage] = useState('');
+  const [openImageDialog, setOpenImageDialog] = useState(false);
+  const theme = useTheme();
+  const [rechazadasData, setRechazadasData] = useState<FacturaAprobada[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
+  const pageSize = 3;
+
+  const fetchRechazadas = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('custom-auth-token');
+      const userString = localStorage.getItem('user');
+
+      if (!userString) throw new Error('Usuario no autenticado');
+
+      const user = JSON.parse(userString);
+      const cliente_id = user.id;
+      const cedula = user.ruc;
+      console.log(cliente_id);
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/facturas?estadoFactura=4&campania_id=1&page=${currentPage}&limit=${pageSize}&cliente_id=${cliente_id}&ruc=${cedula}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      const result = await response.json();
+
+      const mappedData = result.data.map((factura: Factura) => ({
+        id: factura.id,
+        fecha_registro: factura.fechaRegistro,
+        campania: factura.campanias?.nombre || '',
+        local: factura.tienda?.nombre || '',
+        numero_factura: factura.numero,
+        monto: factura.monto,
+        forma_pago: getFormaPagoNombre(factura.formapago_id), // crea una función para traducir el ID
+        cabecera_image: factura.imagen,
+        voucher_image: factura.voucher,
+        estado: getEstadoNombre(factura.estado), // opcional: mapea el estado a string legible
+        cupones: factura.tienda?.numcupones || 0,
+        observacion: factura.observacion || '',
+      }));
+
+      if (!response.ok) throw new Error('Error al obtener datos');
+
+      setRechazadasData(mappedData); // usamos el mapeado
+      setTotalPages(Math.ceil(result.total / pageSize));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error desconocido');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (open) fetchRechazadas();
+  }, [open, currentPage]);
+
+  const handlePageChange = (event: React.ChangeEvent<unknown>, page: number) => {
+    setCurrentPage(page);
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
+      <DialogTitle>Facturas Rechazadas</DialogTitle>
+      <DialogContent>
+        {loading ? (
+          <Box display="flex" justifyContent="center" p={4}>
+            <CircularProgress />
+          </Box>
+        ) : error ? (
+          <Typography color="error" p={2}>
+            {error}
+          </Typography>
+        ) : (
+          <>
+            <TableContainer component={Paper}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>#</TableCell>
+                    <TableCell>Fecha y hora de registro</TableCell>
+                    <TableCell>Campaña</TableCell>
+                    <TableCell>Local</TableCell>
+                    <TableCell>Factura</TableCell>
+                    <TableCell>Monto</TableCell>
+                    <TableCell>Forma de pago</TableCell>
+                    <TableCell>Cabecera factura</TableCell>
+                    <TableCell>Voucher</TableCell>
+                    <TableCell>Estado</TableCell>
+                    <TableCell>Cupones</TableCell>
+                    <TableCell>Observación</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {rechazadasData.map((factura, index) => (
+                    <TableRow key={factura.id}>
+                      <TableCell>{(currentPage - 1) * pageSize + index + 1}</TableCell>
+                      <TableCell>{new Date(factura.fecha_registro).toLocaleString()}</TableCell>
+                      <TableCell>{factura.campania}</TableCell>
+                      <TableCell>{factura.local}</TableCell>
+                      <TableCell>{factura.numero_factura}</TableCell>
+                      <TableCell>${factura.monto}</TableCell>
+                      <TableCell>{factura.forma_pago}</TableCell>
+                      <TableCell>
+                        <Avatar
+                          variant="rounded"
+                          src={factura.cabecera_image}
+                          alt="Cabecera"
+                          sx={{
+                            width: 120,
+                            height: 120,
+                            border: `1px solid ${theme.palette.divider}`,
+                            cursor: 'pointer',
+                          }}
+                          onClick={() => {
+                            setSelectedImage(factura.cabecera_image);
+                            setOpenImageDialog(true);
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Avatar
+                          variant="rounded"
+                          src={factura.voucher_image}
+                          alt="Cabecera"
+                          sx={{
+                            width: 120,
+                            height: 120,
+                            border: `1px solid ${theme.palette.divider}`,
+                            cursor: 'pointer',
+                          }}
+                          onClick={() => {
+                            setSelectedImage(factura.voucher_image);
+                            setOpenImageDialog(true);
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell>{factura.estado}</TableCell>
+                      <TableCell>{factura.cupones}</TableCell>
+                      <TableCell>{factura.observacion}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+
+            <Box display="flex" justifyContent="center" mt={2}>
+              <Pagination count={totalPages} page={currentPage} onChange={handlePageChange} color="primary" />
+            </Box>
+          </>
+        )}
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Cerrar</Button>
+      </DialogActions>
+      <Dialog open={openImageDialog} onClose={() => setOpenImageDialog(false)} maxWidth="md">
+        <DialogContent sx={{ p: 2 }}>
+          <img src={selectedImage} alt="Vista ampliada" style={{ maxWidth: '100%', maxHeight: '80vh' }} />
+        </DialogContent>
+      </Dialog>
+    </Dialog>
+  );
+};
 const BotonesFactura = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
-
-  // const handleSubmitFactura = async (formData: FormData) => {
-  //   try {
-  //     const token = localStorage.getItem('custom-auth-token');
-  //     const cliente_id = localStorage.getItem('id');
-  //     const ruc = localStorage.getItem('ruc');
-  //     console.log("Cliente ID:", cliente_id); // Verifica que el cliente_id esté correcto
-  //     console.log("RUC:", ruc); // Verifica que el ruc esté correcto
-  //     // Simulación de las campañas seleccionadas, puedes reemplazar esto dinámicamente
-  //     const campañasSeleccionadas = [
-  //       {
-  //         id: 1,
-  //         factura: {
-  //           numero: formData.numeroFactura,
-  //           monto: formData.monto,
-  //           tienda_id: parseInt(formData.local), // Asegúrate de que `local` sea un ID válido
-  //           formapago_id: formData.formaPago === 'tarjeta' ? 4 : 3, // Ajusta según tus reglas
-  //           imagen: formData.headerImage?.name || '',
-  //           voucher: formData.voucherImage?.name || '',
-  //         }
-  //       }
-  //     ];
-  
-  //     const payload = {
-  //       facturasCliente: {
-  //         cliente_id: cliente_id, // Puedes obtenerlo desde tu sesión si es dinámico
-  //         ruc: ruc, // Lo mismo aquí
-  //         campanias: campañasSeleccionadas
-  //       }
-  //     };
-  
-  //     const response = await fetch( `${process.env.NEXT_PUBLIC_API_URL}/api/facturas/facturasWeb`, {
-       
-  //       method: 'POST',
-  //       headers: {
-  //         'Authorization': `Bearer ${token}`,
-  //         'Content-Type': 'application/json',
-  //       },
-  //       body: JSON.stringify(payload),
-  //     });
-  
-  //     if (!response.ok) {
-  //       throw new Error(`Error del servidor: ${response.status}`);
-  //     }
-  
-  //     const result = await response.json();
-  //     console.log('Respuesta del backend:', result);
-  //     alert('Factura registrada correctamente.');
-  //   } catch (error) {
-  //     console.error('Error al registrar factura:', error);
-  //     alert('Ocurrió un error al enviar la factura.');
-  //   }
-  // };
-  
+  const [aprobadasOpen, setAprobadasOpen] = useState(false);
+  const [pendientesOpen, setPendientesOpen] = useState(false);
+  const [rechazadasOpen, setRechazadasOpen] = useState(false);
   const handleSubmitFactura = async (formData: ProcessedFormData) => {
     try {
       const token = localStorage.getItem('custom-auth-token');
       const userString = localStorage.getItem('user');
-      
+
       if (!userString) {
         throw new Error('Usuario no autenticado');
       }
-      
+
       const user = JSON.parse(userString);
       const cliente_id = user.id;
       const ruc = user.ruc;
-    
+
       const campañasSeleccionadas = [
         {
           id: 1,
@@ -416,32 +950,32 @@ const BotonesFactura = () => {
             formapago_id: formData.formaPago === 'tarjeta' ? 4 : 3,
             imagen: formData.headerImage,
             voucher: formData.voucherImage,
-          }
-        }
+          },
+        },
       ];
-  
+
       const payload = {
         facturasCliente: {
           cliente_id: cliente_id,
           ruc: ruc,
-          campanias: campañasSeleccionadas
-        }
+          campanias: campañasSeleccionadas,
+        },
       };
-  
+
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/facturas/facturasWeb`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(payload),
       });
-  
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Error del servidor');
       }
-  
+
       const result = await response.json();
       console.log('Respuesta del backend:', result);
       alert('Factura registrada correctamente.');
@@ -452,20 +986,40 @@ const BotonesFactura = () => {
   return (
     <Box
       sx={{
-        minHeight: '100vh',
-        background: 'linear-gradient(to bottom right,rgb(255, 255, 255) 0%,rgb(255, 255, 255) 100%)',
+        minHeight: '60vh',
+        background: 'linear-gradient(to bottom right,rgb(255, 255, 255) 0%, #ffffff 100%)',
         p: 4,
         display: 'flex',
+        flexDirection: 'column',
         alignItems: 'center',
       }}
     >
+      {' '}
+      <Typography
+        variant="h1"
+        sx={{
+          fontWeight: 900,
+          mb: 6,
+          color: '#1a237e',
+          textShadow: '1px 1px 3px rgba(0,0,0,0.1)',
+        }}
+      >
+        ADMINISTRACIÓN DE FACTURAS
+      </Typography>
       <Grid container spacing={4} sx={{ maxWidth: 1200, margin: 'auto' }}>
-        <Grid item xs={12} md={4}>
+        <Grid item xs={12} sm={6} md={3}>
           <StyledButton colorvariant="blue" onClick={() => setDialogOpen(true)}>
-            <IconWrapper className="iconWrapper">
-              <StyledIcon className="icon">
-                <FilePlus weight="duotone" />
-              </StyledIcon>
+          <IconWrapper className="iconWrapper">
+              {/* Reemplazar el ícono por una imagen */}
+              <img
+                src="/assets/ingresar.png"
+                alt="Facturas Ingreso"
+                style={{
+                  width: '80px', // Ajusta el tamaño según necesites
+                  height: '80px',
+                  objectFit: 'contain',
+                }}
+              />
             </IconWrapper>
             <Typography variant="h6" textAlign="center" sx={{ fontWeight: 700 }}>
               Registrar Nueva Factura
@@ -473,12 +1027,20 @@ const BotonesFactura = () => {
           </StyledButton>
         </Grid>
 
-        <Grid item xs={12} md={4}>
-          <StyledButton colorvariant="green">
-            <IconWrapper className="iconWrapper">
-              <StyledIcon className="icon">
-                <CheckCircle weight="fill" />
-              </StyledIcon>
+        {/* Botón Facturas Aprobadas */}
+        <Grid item xs={12} sm={6} md={3}>
+          <StyledButton colorvariant="green" onClick={() => setAprobadasOpen(true)}>
+          <IconWrapper className="iconWrapper">
+              {/* Reemplazar el ícono por una imagen */}
+              <img
+                src="/assets/aprobada.png"
+                alt="Facturas Aprobadas"
+                style={{
+                  width: '80px', // Ajusta el tamaño según necesites
+                  height: '80px',
+                  objectFit: 'contain',
+                }}
+              />
             </IconWrapper>
             <Typography variant="h6" textAlign="center" sx={{ fontWeight: 700 }}>
               Facturas Aprobadas
@@ -486,21 +1048,49 @@ const BotonesFactura = () => {
           </StyledButton>
         </Grid>
 
-        <Grid item xs={12} md={4}>
-          <StyledButton colorvariant="red">
-            <IconWrapper className="iconWrapper">
-              <StyledIcon className="icon">
-                <XSquare weight="duotone" />
-              </StyledIcon>
+        <Grid item xs={12} sm={6} md={3}>
+          <StyledButton colorvariant="red" onClick={() => setPendientesOpen(true)}>
+          <IconWrapper className="iconWrapper">
+              {/* Reemplazar el ícono por una imagen */}
+              <img
+                src="/assets/pendiente.png"
+                alt="Facturas Pendientes"
+                style={{
+                  width: '80px', // Ajusta el tamaño según necesites
+                  height: '80px',
+                  objectFit: 'contain',
+                }}
+              />
             </IconWrapper>
             <Typography variant="h6" textAlign="center" sx={{ fontWeight: 700 }}>
               Facturas Pendientes
             </Typography>
           </StyledButton>
         </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <StyledButton colorvariant="red" onClick={() => setRechazadasOpen(true)}>
+            <IconWrapper className="iconWrapper">
+              {/* Reemplazar el ícono por una imagen */}
+              <img
+                src="/assets/rechazada.png"
+                alt="Facturas Rechazadas"
+                style={{
+                  width: '80px', // Ajusta el tamaño según necesites
+                  height: '80px',
+                  objectFit: 'contain',
+                }}
+              />
+            </IconWrapper>
+            <Typography variant="h6" textAlign="center" sx={{ fontWeight: 700 }}>
+              Facturas Rechazadas
+            </Typography>
+          </StyledButton>
+        </Grid>
       </Grid>
-
       <FacturaDialog open={dialogOpen} onClose={() => setDialogOpen(false)} onSubmit={handleSubmitFactura} />
+      <AprobadasDialog open={aprobadasOpen} onClose={() => setAprobadasOpen(false)} />
+      <PendienteDialog open={pendientesOpen} onClose={() => setPendientesOpen(false)} />
+      <RechazadasDialog open={rechazadasOpen} onClose={() => setRechazadasOpen(false)} />
     </Box>
   );
 };
