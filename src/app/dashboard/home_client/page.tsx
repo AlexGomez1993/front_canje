@@ -86,11 +86,16 @@ const HomeClientPage = () => {
                         {campaign.nombre}
                       </Typography>
                       <Typography variant="body2" color="textSecondary">
-                        Del: {new Date(campaign.promociones[0].fecha_inicio).toLocaleDateString()}
+                        {campaign.promociones?.[0]?.fecha_inicio
+                          ? `Del: ${new Date(campaign.promociones[0].fecha_inicio).toLocaleDateString()}`
+                          : 'Del: -'}
                       </Typography>
                       <Typography variant="body2" color="textSecondary">
-                        Al: {new Date(campaign.promociones[0].fecha_fin).toLocaleDateString()}
+                        {campaign.promociones?.[0]?.fecha_fin
+                          ? `Al: ${new Date(campaign.promociones[0].fecha_fin).toLocaleDateString()}`
+                          : 'Al: -'}
                       </Typography>
+
                       <Typography
                         variant="body1"
                         color="textSecondary"
