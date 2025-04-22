@@ -14,6 +14,7 @@ export const paths = {
     aprobacionline: '/dashboard/aprobacionline',
     integrations: '/dashboard/integrations',
     settings: '/dashboard/settings',
+    home_client: '/dashboard/home_client',
   },
   errors: { notFound: '/errors/not-found' },
   campaigns: {

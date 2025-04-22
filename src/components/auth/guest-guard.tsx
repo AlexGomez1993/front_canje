@@ -36,7 +36,7 @@ export function GuestGuard({ children }: GuestGuardProps): React.JSX.Element | n
         router.replace(paths.dashboard.integrations);
       } else {
         logger.debug('[GuestGuard]: Cliente Logueado, redigiriendo al Inicio');
-        router.replace(paths.dashboard.account);
+        router.replace(paths.dashboard.home_client);
       }
 
       return;
