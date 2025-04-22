@@ -79,35 +79,37 @@ const FacturasTable = () => {
   const [facturasAgregadas, setFacturasAgregadas] = useState<any[]>([]);
   const [formasPago, setFormasPago] = useState<any[]>([]);
   const [formaPagoId, setFormaPagoId] = useState<number | ''>('');
+  const [processing, setProcessing] = useState(false);
 
   const eliminarFactura = (index: number) => {
     setFacturas(facturas.filter((_, i) => i !== index));
   };
+
+  const fetchFacturas = async () => {
+    const token = localStorage.getItem('custom-auth-token');
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/facturas?estadoFactura=1&campania_id=1&page=1&limit=3`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data = await response.json();
+      console.log('Respuesta del backend:', data);
+      setFacturas(data?.data || []); // asegúrate que sea array
+    } catch (error) {
+      console.error('Error al cargar facturas:', error);
+    }
+  };
   useEffect(() => {
-    const fetchFacturas = async () => {
-      const token = localStorage.getItem('custom-auth-token');
-      try {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/facturas?estadoFactura=1&campania_id=1&page=1&limit=3`,
-          {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        const data = await response.json();
-        console.log('Respuesta del backend:', data);
-        setFacturas(data?.data || []); // asegúrate que sea array
-      } catch (error) {
-        console.error('Error al cargar facturas:', error);
-      }
-    };
-
     fetchFacturas();
   }, []);
+
   useEffect(() => {
     const fetchFormasPago = async () => {
       const token = localStorage.getItem('custom-auth-token');
@@ -150,6 +152,56 @@ const FacturasTable = () => {
 
     fetchCampanias();
   }, []);
+  const handleProcesarFactura = async () => {
+    const token = localStorage.getItem('custom-auth-token');
+    if (!facturaSeleccionada || !selectedPromocion || !selectedCampania || !formaPagoId || saldo === null) return;
+  
+    const formaPago = formasPago.find((fp) => fp.id === formaPagoId);
+    const factor = formaPago?.factor || 1;
+    const montoFactura = Number(facturaSeleccionada.monto);
+    const saldoAnterior = Number(saldo);
+    const montoMinimo = selectedPromocion.montominimo;
+    const total = saldoAnterior + montoFactura;
+    const numcupones = Math.floor(total / montoMinimo) * factor;
+    const nuevoSaldo = total % montoMinimo;
+  
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/facturas/procesarFacturaWeb`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          factura_id: facturaSeleccionada.id,
+          promocion: {
+            id: selectedPromocion.id,
+            montominimo: montoMinimo,
+            nuevoSaldo: nuevoSaldo,
+          },
+          usuario_id: facturaSeleccionada.usuario_id || 2, // asegúrate que este campo esté disponible
+          numcupones: numcupones,
+          campania: {
+            id: selectedCampania.id,
+            nombre: selectedCampania.nombre,
+            tipo_configuracion: 2, // asegúrate de que esté disponible
+          },
+        }),
+      });
+  
+      const data = await response.json();
+  
+      if (response.ok) {
+        setOpenFacturaDialog(false);
+        fetchFacturas(); // Recarga las facturas
+      } else {
+        console.error('Error al procesar:', data.message);
+      }
+    } catch (error) {
+      console.error('Error en la solicitud:', error);
+    }
+  };
+  
   // Agrega el handler para el select
   const handleFormaPagoChange = (event: SelectChangeEvent<number>) => {
     setFormaPagoId(Number(event.target.value));
@@ -222,11 +274,11 @@ const FacturasTable = () => {
     if (!saldo || !facturaSeleccionada || !selectedPromocion || !selectedCampania || !formaPagoId) return;
     const formaPago = formasPago.find((fp) => fp.id === formaPagoId);
     const factor = formaPago?.factor || 1;
-    const montoFactura = Number(facturaSeleccionada.monto) ;
+    const montoFactura = Number(facturaSeleccionada.monto);
     const saldoNumerico = Number(saldo);
     const montoMinimo = Number(selectedPromocion.montominimo);
     const total = saldoNumerico + montoFactura;
-    const cantidadCupones = (Math.floor(total / montoMinimo))* factor;
+    const cantidadCupones = Math.floor(total / montoMinimo) * factor;
     const nuevoSaldo = total % montoMinimo;
 
     if (cantidadCupones > 0) {
@@ -266,7 +318,7 @@ const FacturasTable = () => {
         montoConFactor: montoFactura,
         cupones: cantidadCupones,
         total: total,
-        nuevoSaldo: nuevoSaldo
+        nuevoSaldo: nuevoSaldo,
       },
     ]);
 
@@ -723,8 +775,8 @@ const FacturasTable = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenFacturaDialog(false)}>Cerrar</Button>
-          <Button variant="contained" color="success">
-            Confirmar Aprobación
+          <Button variant="contained" color="success"  onClick={handleProcesarFactura} disabled={processing}>
+          {processing ? 'Procesando...' : 'Procesar Factura Online'}
           </Button>
         </DialogActions>
       </Dialog>
