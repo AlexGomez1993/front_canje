@@ -36,7 +36,7 @@ interface Factura {
   monto: number;
   saldoAnterior: number;
   montoConFactor: number;
-  cupones: number ; // Cupones por campaña
+  cupones: number; // Cupones por campaña
   montoMinimo: number;
   total: number;
   nuevoSaldo: number;
@@ -195,7 +195,6 @@ export default function FacturaForm() {
     //     cupones: totalCuponesPorCampaña[campaña.nombre],
     //   })
     // );
-
     // setCuponData(cuponesData);
     // setOpenCouponDialog(true);
   };
@@ -332,6 +331,7 @@ export default function FacturaForm() {
                     (data) => `
                   <div class="coupon">
                     <img src="${data.logo}" class="logo" alt="Logo">
+                    
                     <h2>SCALA SHOPPING</h2>
                     
                     <p><strong>N° CUPÓN:</strong> ${data.numCupon}</p>
@@ -394,8 +394,6 @@ export default function FacturaForm() {
     provincia: 'Pichincha',
     ciudad: '',
   });
-
-  
 
   const token = localStorage.getItem('custom-auth-token');
 
@@ -507,14 +505,14 @@ export default function FacturaForm() {
   };
 
   const agregarFactura = () => {
-    console.log("ingresa factura")
-    console.log("Valores faltantes:");
-    console.log("saldo:", saldo);
-    console.log("selectedPromocion:", selectedPromocion);
-    console.log("selectedCampania:", selectedCampania);
-    console.log("formaPagoId:", formaPagoId);
+    console.log('ingresa factura');
+    console.log('Valores faltantes:');
+    console.log('saldo:', saldo);
+    console.log('selectedPromocion:', selectedPromocion);
+    console.log('selectedCampania:', selectedCampania);
+    console.log('formaPagoId:', formaPagoId);
     if (!selectedPromocion || !selectedCampania || !formaPagoId) return;
-   
+
     const formaPago = formasPago.find((fp) => fp.id === formaPagoId);
     const factor = formaPago?.factor || 1;
     const montoFactura = Number(monto);
@@ -524,25 +522,24 @@ export default function FacturaForm() {
     const cantidadCupones = Math.floor(total / montoMinimo) * factor;
     const nuevoSaldo = total % montoMinimo;
 
-      const nuevaFactura: Factura = {
-        local,
-        factura: facturaNum,
-        pago: formaPago?.nombre,
-        promocion: selectedPromocion.nombre,
-        monto,
-        campania: selectedCampania.nombre,
-        montoMinimo: montoMinimo,
-        saldoAnterior: saldoNumerico,
-        montoConFactor: montoFactura,
-        cupones: cantidadCupones,
-        total: total,
-        nuevoSaldo: nuevoSaldo,
-      };
+    const nuevaFactura: Factura = {
+      local,
+      factura: facturaNum,
+      pago: formaPago?.nombre,
+      promocion: selectedPromocion.nombre,
+      monto,
+      campania: selectedCampania.nombre,
+      montoMinimo: montoMinimo,
+      saldoAnterior: saldoNumerico,
+      montoConFactor: montoFactura,
+      cupones: cantidadCupones,
+      total: total,
+      nuevoSaldo: nuevoSaldo,
+    };
 
-      const nuevasFacturas = [...facturas, nuevaFactura];
-setFacturas(nuevasFacturas);
-console.log(nuevasFacturas);
-
+    const nuevasFacturas = [...facturas, nuevaFactura];
+    setFacturas(nuevasFacturas);
+    console.log(nuevasFacturas);
   };
 
   const eliminarFactura = (index: number) => {
@@ -568,60 +565,6 @@ console.log(nuevasFacturas);
         <Grid item xs={12} sm={6}>
           <TextField fullWidth label="R.U.C." variant="outlined" onChange={handleRucChange} />
         </Grid>
-        {/* <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
-          <DialogTitle>Nuevo Cliente</DialogTitle>
-          <DialogContent>
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
-                <TextField fullWidth label="Nombres" variant="outlined" />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField fullWidth label="Apellidos" variant="outlined" />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField fullWidth label="C.I./R.U.C." variant="outlined" value={cliente.ciRuc} disabled />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField fullWidth label="E-mail" variant="outlined" />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField fullWidth label="Dirección/Sector" variant="outlined" />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField fullWidth label="Fecha Nacimiento" variant="outlined" placeholder="AAAA-MM-DD" />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Select
-                  labelId="sexo-label"
-                  value={cliente.sexo}
-                  onChange={(e) => setCliente({ ...cliente, sexo: e.target.value })}
-                  label="Sexo"
-                >
-                  <MenuItem value="Masculino">Masculino</MenuItem>
-                  <MenuItem value="Femenino">Femenino</MenuItem>
-                </Select>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField fullWidth label="Teléfono" variant="outlined" />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField fullWidth label="Celular" variant="outlined" />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField fullWidth label="Provincia" variant="outlined" defaultValue="Pichincha" disabled />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField fullWidth label="Ciudad" variant="outlined" defaultValue="Quito" disabled />
-              </Grid>
-            </Grid>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setOpenDialog(false)}>Cancelar</Button>
-            <Button variant="contained" color="primary" onClick={handleGuardarCliente}>
-              Guardar
-            </Button>
-          </DialogActions>
-        </Dialog> */}
         <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
           <DialogTitle>Nuevo Cliente</DialogTitle>
           <DialogContent>
@@ -888,9 +831,7 @@ console.log(nuevasFacturas);
               <TableCell>Pago</TableCell>
               <TableCell>Factura</TableCell>
               <TableCell>Monto</TableCell>
-              {CAMPAÑAS_ACTIVAS.map((campaña) => (
-                <TableCell key={campaña.nombre}>Cupones {campaña.nombre}</TableCell>
-              ))}
+              <TableCell>Cupones</TableCell>
               <TableCell>Eliminar</TableCell>
             </TableRow>
           </TableHead>
@@ -900,8 +841,8 @@ console.log(nuevasFacturas);
                 <TableCell>{factura.local}</TableCell>
                 <TableCell>{factura.pago}</TableCell>
                 <TableCell>{factura.factura}</TableCell>
-                <TableCell>{factura.monto.toFixed(2)}</TableCell>
-                  <TableCell></TableCell>
+                <TableCell>{factura.monto}</TableCell>
+                <TableCell>{factura.cupones}</TableCell>
                 <TableCell>
                   <Button variant="contained" color="error" onClick={() => eliminarFactura(index)}>
                     Eliminar
@@ -923,17 +864,26 @@ console.log(nuevasFacturas);
               <TableCell>Total</TableCell>
               <TableCell>campania</TableCell>
               <TableCell>Saldo Nue.</TableCell>
+              <TableCell>Eliminar</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            <TableRow>
-              <TableCell></TableCell>
-              <TableCell></TableCell>
-              <TableCell>0.00</TableCell>
-              <TableCell></TableCell>
-              <TableCell></TableCell>
-              <TableCell>0.00</TableCell>
-            </TableRow>
+            {facturas.map((factura, index) => (
+              <TableRow key={index}>
+                <TableCell>{factura.promocion}</TableCell>
+                <TableCell>{factura.montoMinimo}</TableCell>
+                <TableCell>{factura.saldoAnterior}</TableCell>
+                <TableCell>{factura.monto}</TableCell>
+                <TableCell>{factura.total}</TableCell>
+                <TableCell>{factura.campania}</TableCell>
+                <TableCell>{factura.nuevoSaldo}</TableCell>
+                <TableCell>
+                  <Button variant="contained" color="error" onClick={() => eliminarFactura(index)}>
+                    Eliminar
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
           </TableBody>
         </Table>
       </TableContainer>
