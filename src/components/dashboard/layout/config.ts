@@ -10,7 +10,7 @@ export const navItemsUserTI = [
     href: paths.dashboard.aprobacionline,
     icon: 'fac-online',
   },
-  { key: 'integrations', title: 'Reglamento', href: paths.dashboard.integrations, icon: 'file-text' },
+  { key: 'integrations', title: 'Reglamento', href: paths.dashboard.integrations, icon: 'reglament' },
   { key: 'campaigns', title: 'Campañas', href: paths.campaigns.list, icon: 'gift' },
   { key: 'promotions', title: 'Promociones', href: paths.promotions.list, icon: 'ticket' },
   { key: 'comercial_stores', title: 'Locales Comerciales', href: paths.comercial_stores.list, icon: 'store' },
@@ -26,14 +26,13 @@ export const navItemsClient = [
 ] satisfies NavItemConfig[];
 
 export const navItemsMkt = [
-  { key: 'integrations', title: 'Reglamento', href: paths.dashboard.integrations, icon: 'file-text' },
+  { key: 'integrations', title: 'Reglamento', href: paths.dashboard.integrations, icon: 'reglament' },
   { key: 'customers', title: 'Facturas', href: paths.dashboard.customers, icon: 'file-text' },
-  { key: 'online-invoices', title: 'Cuenta', href: paths.dashboard.account, icon: 'fac-online' },
-  { key: 'customeronline', title: 'Facturas Online', href: paths.dashboard.customeronline, icon: 'file-text' },
   {
     key: 'aprobacionline',
     title: 'Aprobación Facturas Online',
     href: paths.dashboard.aprobacionline,
     icon: 'fac-online',
   },
+  { key: 'account', title: 'Cuenta', href: paths.dashboard.account, icon: 'user' },
 ] satisfies NavItemConfig[];

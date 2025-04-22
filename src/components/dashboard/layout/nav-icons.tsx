@@ -1,4 +1,4 @@
-import { CheckCircle, FileText, Gift, House, Storefront, Ticket, Wallet } from '@phosphor-icons/react';
+import { BookOpenText, CheckCircle, FileText, Gift, House, Storefront, Ticket, Wallet } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react/dist/lib/types';
 import { ChartPie as ChartPieIcon } from '@phosphor-icons/react/dist/ssr/ChartPie';
 import { GearSix as GearSixIcon } from '@phosphor-icons/react/dist/ssr/GearSix';
@@ -21,4 +21,5 @@ export const navIcons = {
   'fac-online': CheckCircle,
   payment_methods: Wallet,
   'home-client': House,
+  reglament: BookOpenText,
 } as Record<string, Icon>;
