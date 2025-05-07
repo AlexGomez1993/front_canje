@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import {
+  Alert,
   Avatar,
   Button,
   Chip,
@@ -9,12 +10,15 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  Divider,
   FormControl,
   Grid,
   InputLabel,
   MenuItem,
+  Pagination,
   Paper,
   Select,
+  Snackbar,
   SxProps,
   Table,
   TableBody,
@@ -27,6 +31,11 @@ import {
   useTheme,
 } from '@mui/material';
 import { SelectChangeEvent } from '@mui/material/Select';
+import axiosClient from '@/lib/axiosClient';
+import { Invoice } from '@phosphor-icons/react';
+import { useUser } from '@/hooks/use-user';
+import { Store } from '@/types/comercial_store';
+import axios from 'axios';
 
 interface Factura {
   id: number;
@@ -42,7 +51,8 @@ type Campania = {
   id: number;
   nombre: string;
   promociones: Promocion[];
-  // otros campos según tu API...
+  configuracion: any;
+  tiendas: Store[]
 };
 
 type Promocion = {
@@ -63,15 +73,20 @@ type FacturaAgregada = {
   nuevoSaldo: number;
 };
 const FacturasTable = () => {
+  const { user } = useUser();
   const [openImageDialog, setOpenImageDialog] = useState(false);
   const [openFacturaDialog, setOpenFacturaDialog] = useState(false);
+  const [openRechazoDialog, setOpenRechazoDialog] = useState(false);
+  const [observacion, setObservacion] = useState('');
+  const [snackbarOpen, setSnackbarOpen] = React.useState(false);
+  const [snackbarMsg, setSnackbarMsg] = React.useState('');
+  const [snackbarType, setSnackbarType] = React.useState<'success' | 'error'>('success');
   const [selectedImage, setSelectedImage] = useState('');
   const [facturaSeleccionada, setFacturaSeleccionada] = useState<any>(null);
   const [saldo, setSaldo] = useState<number | null>(null);
   const [loadingSaldo, setLoadingSaldo] = useState(false);
   const [selectedCampania, setSelectedCampania] = useState<Campania | null>(null);
   const [montoMinimo, setMontoMinimo] = useState<string>('');
-  const [locales, setLocales] = useState<any[]>([]);
   const [campanias, setCampanias] = useState<Campania[]>([]);
   const [selectedPromocion, setSelectedPromocion] = useState<Promocion | null>(null);
   const theme = useTheme();
@@ -80,35 +95,40 @@ const FacturasTable = () => {
   const [formasPago, setFormasPago] = useState<any[]>([]);
   const [formaPagoId, setFormaPagoId] = useState<number | ''>('');
   const [processing, setProcessing] = useState(false);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [filterRuc, setFilterRuc] = useState<string>('');
+  const [totalPage, setTotalPage] = useState(1);
+  const [totalFacturas, setTotalFacturas] = useState(0);
+  const [cuponesAImprimir, setcuponesAImprimir] = useState(0)
 
   const eliminarFactura = (index: number) => {
     setFacturas(facturas.filter((_, i) => i !== index));
   };
 
   const fetchFacturas = async () => {
-    const token = localStorage.getItem('custom-auth-token');
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/facturas?estadoFactura=1&campania_id=1&page=1&limit=3`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-        }
+      const response = await axiosClient.get(
+        `/api/facturas?estadoFactura=1`, {
+        params: {
+          limit: rowsPerPage,
+          page: currentPage,
+          ruc: filterRuc,
+        },
+      }
       );
 
-      const data = await response.json();
-      console.log('Respuesta del backend:', data);
-      setFacturas(data?.data || []); // asegúrate que sea array
+      setFacturas(response.data.data || []);
+      setTotalPage(response.data.totalPaginas);
+      setTotalFacturas(response.data.total);
     } catch (error) {
       console.error('Error al cargar facturas:', error);
     }
   };
   useEffect(() => {
     fetchFacturas();
-  }, []);
+  }, [currentPage, rowsPerPage, filterRuc]);
+
 
   useEffect(() => {
     const fetchFormasPago = async () => {
@@ -153,56 +173,50 @@ const FacturasTable = () => {
     fetchCampanias();
   }, []);
   const handleProcesarFactura = async () => {
-    const token = localStorage.getItem('custom-auth-token');
-    if (!facturaSeleccionada || !selectedPromocion || !selectedCampania || !formaPagoId || saldo === null) return;
-  
+    if (!facturaSeleccionada || !selectedPromocion || !selectedCampania || saldo === null) return;
+
     const formaPago = formasPago.find((fp) => fp.id === formaPagoId);
     const factor = formaPago?.factor || 1;
     const montoFactura = Number(facturaSeleccionada.monto);
     const saldoAnterior = Number(saldo);
     const montoMinimo = selectedPromocion.montominimo;
-    const total = saldoAnterior + montoFactura;
+    const total = (saldoAnterior + montoFactura);
     const numcupones = Math.floor(total / montoMinimo) * factor;
     const nuevoSaldo = total % montoMinimo;
-  
+
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/facturas/procesarFacturaWeb`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+      const response = await axiosClient.put(`/api/facturas/procesarFacturaWeb`, {
+        factura_id: facturaSeleccionada.id,
+        promocion: {
+          id: selectedPromocion.id,
+          montominimo: montoMinimo,
+          nuevoSaldo: nuevoSaldo,
         },
-        body: JSON.stringify({
-          factura_id: facturaSeleccionada.id,
-          promocion: {
-            id: selectedPromocion.id,
-            montominimo: montoMinimo,
-            nuevoSaldo: nuevoSaldo,
-          },
-          usuario_id: facturaSeleccionada.usuario_id || 2, // asegúrate que este campo esté disponible
-          numcupones: numcupones,
-          campania: {
-            id: selectedCampania.id,
-            nombre: selectedCampania.nombre,
-            tipo_configuracion: 2, // asegúrate de que esté disponible
-          },
-        }),
+        usuario_id: user?.id,
+        numcupones: numcupones,
+        campania: {
+          id: selectedCampania.id,
+          nombre: selectedCampania.nombre,
+          tipo_configuracion: selectedCampania.configuracion.descripcion,
+        },
       });
-  
-      const data = await response.json();
-  
-      if (response.ok) {
-        setOpenFacturaDialog(false);
-        fetchFacturas(); // Recarga las facturas
-      } else {
-        console.error('Error al procesar:', data.message);
-      }
+      setSnackbarType('success');
+      setSnackbarMsg('Factura procesada con éxito');
+      setOpenFacturaDialog(false);
+      //handleImprimirCupon(cuponesAImprimir);
+      setSelectedPromocion(null);
+      setSelectedCampania(null);
+      setSaldo(null)
+      fetchFacturas();
     } catch (error) {
       console.error('Error en la solicitud:', error);
+      setSnackbarType('error');
+      setSnackbarMsg('Error al procesar la fatura');
+    } finally {
+      setSnackbarOpen(true);
     }
   };
-  
-  // Agrega el handler para el select
+
   const handleFormaPagoChange = (event: SelectChangeEvent<number>) => {
     setFormaPagoId(Number(event.target.value));
   };
@@ -224,14 +238,14 @@ const FacturasTable = () => {
           </head>
           <body>
             ${chunkArray(cuponData, 2)
-              .map(
-                (pair) => `
+          .map(
+            (pair) => `
               <div class="page-container">
                 <div class="cut-guide cut-guide-top"></div>
                 <div class="cut-guide cut-guide-bottom"></div>
                 ${pair
-                  .map(
-                    (data) => `
+                .map(
+                  (data) => `
                   <div class="coupon">
                     <img src="${data.logo}" class="logo" alt="Logo">
                     <h2>SCALA SHOPPING</h2>
@@ -251,12 +265,12 @@ const FacturasTable = () => {
                     </div>
                   </div>
                 `
-                  )
-                  .join('')}
+                )
+                .join('')}
               </div>
             `
-              )
-              .join('')}
+          )
+          .join('')}
           </body>
         </html>
       `);
@@ -271,8 +285,8 @@ const FacturasTable = () => {
     }
   };
   const handleAgregarFactura = () => {
-    if (!saldo || !facturaSeleccionada || !selectedPromocion || !selectedCampania || !formaPagoId) return;
-    const formaPago = formasPago.find((fp) => fp.id === formaPagoId);
+    if (!saldo || !facturaSeleccionada || !selectedPromocion || !selectedCampania) return;
+    const formaPago = formasPago.find((fp) => fp.id === facturaSeleccionada.formaPago_id);
     const factor = formaPago?.factor || 1;
     const montoFactura = Number(facturaSeleccionada.monto);
     const saldoNumerico = Number(saldo);
@@ -280,7 +294,6 @@ const FacturasTable = () => {
     const total = saldoNumerico + montoFactura;
     const cantidadCupones = Math.floor(total / montoMinimo) * factor;
     const nuevoSaldo = total % montoMinimo;
-
     if (cantidadCupones > 0) {
       const hoy = new Date().toLocaleDateString('es-ES');
       const cuponData = Array.from({ length: cantidadCupones }, (_, index) => ({
@@ -304,6 +317,7 @@ const FacturasTable = () => {
       //handleImprimirCupon(cuponData);
     }
     // Agregar al estado de facturas agregadas
+    console.log('facturasAgregadas', facturasAgregadas)
     setFacturasAgregadas((prev) => [
       ...prev,
       {
@@ -322,8 +336,6 @@ const FacturasTable = () => {
       },
     ]);
 
-    //setOpenFacturaDialog(false);
-    // Aquí deberías añadir lógica para actualizar el estado de la factura en el backend
   };
   const tableHeaderStyles: SxProps = {
     backgroundColor: theme.palette.primary.light,
@@ -332,13 +344,11 @@ const FacturasTable = () => {
       fontWeight: 600,
     },
   };
-  const handleCampaniaChange = (event: SelectChangeEvent<number>) => {
-    const campaniaId = Number(event.target.value);
+  const handleCampania = (campaniaId: number) => {
     const selected = campanias.find((c) => c.id === campaniaId) || null;
     setSelectedCampania(selected);
-    setSelectedPromocion(null); // reset por si cambia
-    setMontoMinimo(''); // también puedes setear aquí el mínimo si quieres
-    setLocales([]); // resetea locales hasta que escojan promo
+    setSelectedPromocion(null);
+    setMontoMinimo('');
   };
   const handlePromocionChange = async (event: SelectChangeEvent<string>) => {
     const selectedId = parseInt(event.target.value);
@@ -346,65 +356,76 @@ const FacturasTable = () => {
     setSelectedPromocion(promocionSeleccionada || null);
 
     if (promocionSeleccionada) {
-      const token = localStorage.getItem('custom-auth-token');
-      try {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/locales?promocion_id=${promocionSeleccionada.id}`,
-          {
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        const data = await response.json();
-        setLocales(data.data || []);
-      } catch (error) {
-        console.error('Error al obtener locales:', error);
-        setLocales([]);
-      }
+      calcularSaldo();
     }
+  };
+  const handleRowsPerPageChange = (event: SelectChangeEvent<number>) => {
+    setRowsPerPage(Number(event.target.value));
+    setCurrentPage(1);
+  };
+  const handleChangePage = (event: React.ChangeEvent<unknown>, newPage: number) => {
+    setCurrentPage(newPage);
+  };
+
+  const handleFilterChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setFilterRuc(event.target.value);
+    setCurrentPage(1);
+  };
+  const handleOpenDialog = (factura: any) => {
+    setFacturaSeleccionada(factura);
+    setOpenRechazoDialog(true);
+  };
+
+  const handleCloseDialog = () => {
+    setOpenRechazoDialog(false);
+    setObservacion('');
+  };
+
+  const handleConfirmarRechazo = async () => {
+    try {
+      await axiosClient.put('/api/facturas/rechazarFacturaWeb', {
+        factura_id: facturaSeleccionada.id,
+        observacion: observacion,
+        usuario_id: user?.id
+      })
+      setSnackbarType('success');
+      setSnackbarMsg('Factura rechazada con éxito');
+      fetchFacturas();
+      handleCloseDialog();
+    } catch (err) {
+      console.error(err);
+      setSnackbarType('error');
+      setSnackbarMsg('Error al rechazar la fatura');
+    } finally {
+      setSnackbarOpen(true);
+    }
+  };
+
+  const handleSnackbarClose = () => {
+    setSnackbarOpen(false);
   };
 
   const handleAprobarClick = (factura: any) => {
     setFacturaSeleccionada(factura);
+    handleCampania(factura.campania_id);
     setOpenFacturaDialog(true);
   };
-  const statusChipStyles = (status: string): SxProps => ({
-    backgroundColor:
-      status === 'aprobado'
-        ? theme.palette.success.light
-        : status === 'pendiente'
-          ? theme.palette.warning.light
-          : theme.palette.error.light,
-    color: theme.palette.common.white,
-    fontWeight: 500,
-    minWidth: 100,
-  });
+
   const calcularSaldo = async () => {
     if (!facturaSeleccionada?.cliente?.id) return;
-
-    const token = localStorage.getItem('custom-auth-token');
     setLoadingSaldo(true);
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/saldosCliente`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          cliente_id: facturaSeleccionada.cliente.id,
-        }),
+      const response = await axiosClient.post(`/api/saldosCliente`, {
+        cliente_id: facturaSeleccionada.cliente.id,
       });
+      const saldosCliente = response.data.data;
+      if (saldosCliente && saldosCliente.length > 0) {
+        const saldoCamPromo = saldosCliente.find((s: any) => s.campania_id == selectedCampania!.id && s.promocion_id == selectedPromocion!.id)
+        if (saldoCamPromo) {
+          setSaldo(saldoCamPromo.saldo);
+        }
 
-      const json = await response.json();
-      const data = json?.data;
-
-      if (Array.isArray(data) && data.length > 0) {
-        console.log(data);
-        setSaldo(data[0].saldo);
       } else {
         setSaldo(0);
       }
@@ -418,6 +439,39 @@ const FacturasTable = () => {
 
   return (
     <Paper elevation={3} sx={{ borderRadius: 1, overflow: 'hidden' }}>
+      <Typography
+        variant="h5"
+        sx={{
+          fontWeight: 'bold',
+          color: '#1976d2',
+          display: 'flex',
+          alignItems: 'center',
+          textTransform: 'uppercase',
+          letterSpacing: 1.5,
+          textShadow: '2px 2px 5px rgba(0, 0, 0, 0.2)',
+        }}
+      >
+        <Invoice style={{ marginRight: 8 }} />
+        Facturas Online
+      </Typography>
+      <TextField
+        label="Filtrar por ci/ruc"
+        variant="outlined"
+        value={filterRuc}
+        onChange={handleFilterChange}
+        fullWidth
+        sx={{ marginBottom: 2 }}
+        size="small"
+      />
+
+      <FormControl fullWidth sx={{ marginBottom: 2 }}>
+        <InputLabel>Filas por página</InputLabel>
+        <Select value={rowsPerPage} onChange={handleRowsPerPageChange} label="Filas por página" size="small">
+          <MenuItem value={3}>3</MenuItem>
+          <MenuItem value={5}>5</MenuItem>
+          <MenuItem value={10}>10</MenuItem>
+        </Select>
+      </FormControl>
       <TableContainer>
         <Table sx={{ minWidth: 1200 }}>
           <TableHead sx={tableHeaderStyles}>
@@ -431,7 +485,6 @@ const FacturasTable = () => {
               <TableCell>Forma de Pago</TableCell>
               <TableCell>Cabecera Factura</TableCell>
               <TableCell>Voucher</TableCell>
-              <TableCell>Estado</TableCell>
               <TableCell align="center">Aprobar</TableCell>
               <TableCell align="center">Rechazar</TableCell>
             </TableRow>
@@ -444,7 +497,7 @@ const FacturasTable = () => {
                   <TableCell>{idx + 1}</TableCell>
                   <TableCell>{new Date(factura.createdAt).toLocaleString()}</TableCell>
                   <TableCell>{factura.ruc}</TableCell>
-                  <TableCell>-</TableCell>
+                  <TableCell>{factura.tienda ? factura.tienda.nombre : '-'}</TableCell>
                   <TableCell>{factura.numero}</TableCell>
                   <TableCell align="right">${parseFloat(factura.monto).toFixed(2)}</TableCell>
                   <TableCell>{factura.formapago_id}</TableCell>
@@ -474,10 +527,6 @@ const FacturasTable = () => {
                       }}
                     />
                   </TableCell>
-
-                  <TableCell>
-                    <Chip label={'PENDIENTE'} sx={statusChipStyles('pendiente')} />
-                  </TableCell>
                   <TableCell align="center">
                     <Button
                       variant="contained"
@@ -500,6 +549,7 @@ const FacturasTable = () => {
                       variant="contained"
                       color="error"
                       size="small"
+                      onClick={() => handleOpenDialog(factura)}
                       sx={{
                         textTransform: 'none',
                         borderRadius: 2,
@@ -515,6 +565,17 @@ const FacturasTable = () => {
           </TableBody>
         </Table>
       </TableContainer>
+      <Pagination
+        count={totalPage}
+        page={currentPage}
+        onChange={handleChangePage}
+        sx={{ marginTop: 2, display: 'flex', justifyContent: 'center' }}
+      />
+      <div className="flex justify-between items-center p-3 bg-gray-50">
+        <Typography variant="body2" color="textSecondary">
+          Mostrando {facturas.length} de {totalFacturas} registros
+        </Typography>
+      </div>
       <Dialog open={openImageDialog} onClose={() => setOpenImageDialog(false)} maxWidth="md">
         <DialogContent sx={{ p: 2 }}>
           <img src={selectedImage} alt="Vista ampliada" style={{ maxWidth: '100%', maxHeight: '80vh' }} />
@@ -601,9 +662,9 @@ const FacturasTable = () => {
                   <Select
                     labelId="campania-label"
                     value={selectedCampania?.id || ''}
-                    onChange={handleCampaniaChange}
                     displayEmpty
-                    label="Campaña" // Este 'label' hace que la etiqueta se mueva al seleccionar algo
+                    label="Campaña"
+                    disabled
                   >
                     {campanias.map((c) => (
                       <MenuItem key={c.id} value={c.id}>
@@ -690,9 +751,10 @@ const FacturasTable = () => {
                   <InputLabel id="forma-pago-label">Forma de Pago</InputLabel>
                   <Select
                     labelId="forma-pago-label"
-                    value={formaPagoId}
+                    value={facturaSeleccionada.formapago_id}
                     onChange={handleFormaPagoChange}
                     label="Forma de Pago"
+                    disabled
                   >
                     {formasPago.map((fp) => (
                       <MenuItem key={fp.id} value={fp.id}>
@@ -725,10 +787,10 @@ const FacturasTable = () => {
               <TableBody>
                 {facturasAgregadas.map((factura, index) => (
                   <TableRow key={index}>
-                    <TableCell>{factura.local}</TableCell>
+                    <TableCell>{facturaSeleccionada.tienda ? facturaSeleccionada.tienda.nombre : '-'}</TableCell>
                     <TableCell>{factura.pago}</TableCell>
                     <TableCell>{factura.factura}</TableCell>
-                    <TableCell>{factura.monto}</TableCell>
+                    <TableCell>{parseFloat(factura.monto).toFixed(2)}</TableCell>
                     <TableCell>{factura.campania}</TableCell>
                     <TableCell>
                       <Button variant="contained" color="error" onClick={() => eliminarFactura(index)}>
@@ -764,9 +826,9 @@ const FacturasTable = () => {
                     <TableCell>${factura.saldoAnterior}</TableCell>
                     <TableCell>${factura.montoConFactor}</TableCell>
                     <TableCell>{factura.cupones}</TableCell>
-                    <TableCell>${factura.total}</TableCell>
+                    <TableCell>${parseFloat(factura.total).toFixed(2)}</TableCell>
                     <TableCell>{factura.campania}</TableCell>
-                    <TableCell>${factura.nuevoSaldo}</TableCell>
+                    <TableCell>${parseFloat(factura.nuevoSaldo).toFixed(2)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -775,23 +837,37 @@ const FacturasTable = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenFacturaDialog(false)}>Cerrar</Button>
-          <Button variant="contained" color="success"  onClick={handleProcesarFactura} disabled={processing}>
-          {processing ? 'Procesando...' : 'Procesar Factura Online'}
+          <Button variant="contained" color="success" onClick={handleProcesarFactura} disabled={processing}>
+            {processing ? 'Procesando...' : 'Procesar Factura Online'}
           </Button>
         </DialogActions>
       </Dialog>
-
-      {/* Footer de la tabla */}
-      <div className="flex justify-between items-center p-3 bg-gray-50">
-        <Typography variant="body2" color="textSecondary">
-          Mostrando {facturas.length} de {facturas.length} registros
-        </Typography>
-        <div className="flex gap-2">
-          <Chip label="Aprobados: 0" variant="outlined" color="success" />
-          <Chip label={`Pendientes: ${facturas.length}`} variant="outlined" color="warning" />
-          <Chip label="Rechazados: 0" variant="outlined" color="error" />
-        </div>
-      </div>
+      <Dialog open={openRechazoDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
+        <DialogTitle>Rechazar Factura</DialogTitle>
+        <DialogContent>
+          <TextField
+            label="Observación"
+            multiline
+            fullWidth
+            minRows={4}
+            value={observacion}
+            onChange={(e) => setObservacion(e.target.value)}
+            placeholder="Ingrese el motivo del rechazo..."
+            variant="outlined"
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDialog}>Cancelar</Button>
+          <Button onClick={handleConfirmarRechazo} color="error" variant="contained">
+            Confirmar Rechazo
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <Snackbar open={snackbarOpen} autoHideDuration={2000} onClose={handleSnackbarClose}>
+        <Alert onClose={() => setSnackbarOpen(false)} severity={snackbarType} sx={{ width: '100%' }}>
+          {snackbarMsg}
+        </Alert>
+      </Snackbar>
     </Paper>
   );
 };

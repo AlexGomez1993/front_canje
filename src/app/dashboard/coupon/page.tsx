@@ -1,21 +1,24 @@
 
 import React from 'react';
 
-interface CouponProps {
-  logo: string;
-  numCupon: string;
-  hoy: string;
-  cliente: {
+interface Cliente {
     nombre: string;
     apellidos: string;
     ruc: string;
     telefono: string;
     celular: string;
     direccion: string;
-  };
-  campania: string;
-  cupones: number; // Número de cupones para esta campaña
 }
+interface CouponProps {
+  logo: string;
+  numCupon: string;
+  hoy: string;
+  cliente: Cliente;
+  campania: string;
+  cupones: number; 
+}
+
+
 
 const Coupon: React.FC<CouponProps> = ({ logo, numCupon, hoy, cliente, campania, cupones }) => {
   return (
