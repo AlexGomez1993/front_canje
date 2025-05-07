@@ -1,7 +1,12 @@
 
-import React from 'react';
+import React, { ChangeEvent, useEffect, useState } from 'react';
 
-interface CouponProps {
+export interface PageProps {
+  params?: any;
+  searchParams?: any;
+  [key: string]: any;  // Acepta cualquier propiedad adicional como 'logo'
+}
+interface CouponProps extends PageProps {
   logo: string;
   numCupon: string;
   hoy: string;
@@ -16,6 +21,8 @@ interface CouponProps {
   campania: string;
   cupones: number; // Número de cupones para esta campaña
 }
+
+
 
 const Coupon: React.FC<CouponProps> = ({ logo, numCupon, hoy, cliente, campania, cupones }) => {
   return (
