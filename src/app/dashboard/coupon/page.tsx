@@ -1,9 +1,6 @@
 
 import React, { ChangeEvent, useEffect, useState } from 'react';
 
-<<<<<<< HEAD
-interface Cliente {
-=======
 export interface PageProps {
   params?: any;
   searchParams?: any;
@@ -14,7 +11,6 @@ interface CouponProps extends PageProps {
   numCupon: string;
   hoy: string;
   cliente: {
->>>>>>> origin/main
     nombre: string;
     apellidos: string;
     ruc: string;
@@ -22,13 +18,6 @@ interface CouponProps extends PageProps {
     celular: string;
     direccion: string;
 }
-interface CouponProps {
-  logo: string;
-  numCupon: string;
-  hoy: string;
-  cliente: Cliente;
-  campania: string;
-  cupones: number; 
 }
 
 
