@@ -16,6 +16,7 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
+import Box from '@mui/material/Box';
 import Link from '@mui/material/Link';
 import { Eye, EyeSlash } from '@phosphor-icons/react';
 import { Controller, useForm } from 'react-hook-form';
@@ -107,102 +108,168 @@ export function SignInFormClient(): React.JSX.Element {
   );
 
   return (
-    <Stack spacing={3}>
-      <Typography
-        variant="h4"
+    <Box
+      sx={{
+        minHeight: '100vh',
+        width: '100vw',
+        backgroundImage: 'url(/assets/fondo-scala.jpg)',
+        backgroundSize: 'cover',
+        backgroundRepeat: 'no-repeat',
+        backgroundPosition: 'center',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        p: 5,
+        position: 'fixed',
+        top: 0,
+        left: 0,
+      }}
+    >
+      <Stack
+        spacing={3}
         sx={{
-          fontWeight: 'bold',
-          color: 'primary.main',
-          textAlign: 'center',
+          background: 'linear-gradient(145deg, rgba(51,0,27,0.9) 0%, rgba(74,0,31,0.7) 100%)',
+          borderRadius: 2,
+          p: 4,
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+          maxWidth: 450,
+          width: '100%',
+          mx: 'auto',
+          color: 'white',
+          backdropFilter: 'blur(4px)',
+          border: '1px solid rgba(255,255,255,0.1)',
         }}
       >
-        Iniciar Sesión
-      </Typography>
-      <Divider />
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <Stack spacing={2}>
-          <Controller
-            control={control}
-            name="ruc"
-            render={({ field }) => (
-              <FormControl error={Boolean(errors.ruc)}>
-                <InputLabel>C.I. / Pasaporte</InputLabel>
-                <OutlinedInput {...field} label="C.I./ Pasaporte" />
-                <Typography variant="caption" color="text.secondary">
-                  * Recuerda si tienes pasaporte anteponer la letra P *
-                </Typography>
-                {errors.ruc && (
-                  <Typography variant="caption" color="error">
-                    {errors.ruc.message}
-                  </Typography>
-                )}
-              </FormControl>
-            )}
-          />
-          {!validado && (
-            <Button variant="outlined" onClick={handleValidarRuc} disabled={isPending}>
-              {isPending ? <CircularProgress size={20} /> : 'Siguiente'}
-            </Button>
-          )}
-
-          {(clienteState?.estado === 1 || clienteState?.estado === 3) && (
+        <Typography
+          variant="h4"
+          sx={{
+            fontWeight: 800,
+            color: 'common.white',
+            textAlign: 'center',
+            textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+          }}
+        >
+          Iniciar Sesión
+        </Typography>
+        <Divider sx={{ borderColor: 'rgba(255,255,255,0.2)' }} />
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <Stack spacing={2}>
             <Controller
               control={control}
-              name="password"
+              name="ruc"
               render={({ field }) => (
-                <FormControl error={Boolean(errors.password)}>
-                  <InputLabel>Contraseña</InputLabel>
+                <FormControl error={Boolean(errors.ruc)}>
+                  <InputLabel sx={{ color: 'rgba(255,255,255,0.7)' }}>C.I. / Pasaporte</InputLabel>
                   <OutlinedInput
                     {...field}
-                    type={showPassword ? 'text' : 'password'}
-                    endAdornment={
-                      showPassword ? (
-                        <Eye onClick={() => setShowPassword(false)} />
-                      ) : (
-                        <EyeSlash onClick={() => setShowPassword(true)} />
-                      )
-                    }
+                    label="C.I./ Pasaporte"
+                    sx={{
+                      color: 'white',
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: 'rgba(255,255,255,0.3)',
+                      },
+                      '&:hover .MuiOutlinedInput-notchedOutline': {
+                        borderColor: 'rgba(255,255,255,0.5)',
+                      },
+                    }}
                   />
-                  {errors.password && (
+                  <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)' }}>
+                    * Recuerda si tienes pasaporte anteponer la letra P *
+                  </Typography>
+                  {errors.ruc && (
                     <Typography variant="caption" color="error">
-                      {errors.password.message}
+                      {errors.ruc.message}
                     </Typography>
                   )}
                 </FormControl>
               )}
             />
-          )}
-
-          {errors.root && <Alert severity="error">{errors.root.message}</Alert>}
-
-          {(clienteState?.estado === 1 || clienteState?.estado === 3) && (
-            <>
-              <div>
-                <Link component={RouterLink} href={paths.auth.resetPassword} variant="subtitle2">
-                  Olvidaste tu Contraseña?
-                </Link>
-              </div>
-              <Button type="submit" variant="contained" disabled={isPending}>
-                {isPending ? <CircularProgress size={20} /> : 'Ingresar'}
+            {!validado && (
+              <Button sx={{
+                background: 'rgba(51,0,27,0.85)',
+                color: 'white',
+                '&:hover': {
+                  background: 'rgba(51,0,27,1)',
+                  boxShadow: '0 4px 15px rgba(51,0,27,0.4)'
+                },
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+              }} variant="outlined" onClick={handleValidarRuc} disabled={isPending}>
+                {isPending ? <CircularProgress size={20} /> : 'Siguiente'}
               </Button>
-            </>
-          )}
-          {clienteState?.estado === 1 && (
-            <Alert severity="info">
-              Usted fue registrado en la isla de atención al cliente del centro comercial. Su clave es su número de
-              identificación. Recomendamos cambiarla en el módulo Perfil → Cambiar contraseña.
-            </Alert>
-          )}
-        </Stack>
-      </form>
+            )}
 
-      <NewClientForm
-        open={openDialog}
-        onClose={() => setOpenDialog(false)}
-        ciRuc={rucValue}
-        setClienteState={setClienteState}
-        onSubmitAfterCreate={onSubmit}
-      />
-    </Stack>
+            {(clienteState?.estado === 1 || clienteState?.estado === 3) && (
+              <Controller
+                control={control}
+                name="password"
+                render={({ field }) => (
+                  <FormControl error={Boolean(errors.password)}>
+                    <InputLabel>Contraseña</InputLabel>
+                    <OutlinedInput
+                      {...field}
+                      type={showPassword ? 'text' : 'password'}
+                      endAdornment={
+                        showPassword ? (
+                          <Eye onClick={() => setShowPassword(false)} />
+                        ) : (
+                          <EyeSlash onClick={() => setShowPassword(true)} />
+                        )
+                      }
+                    />
+                    {errors.password && (
+                      <Typography variant="caption" color="error">
+                        {errors.password.message}
+                      </Typography>
+                    )}
+                  </FormControl>
+                )}
+              />
+            )}
+
+            {errors.root && <Alert severity="error">{errors.root.message}</Alert>}
+
+            {(clienteState?.estado === 1 || clienteState?.estado === 3) && (
+              <>
+                <div>
+                  <Link component={RouterLink} href={paths.auth.resetPassword} variant="subtitle2">
+                    Olvidaste tu Contraseña?
+                  </Link>
+                </div>
+                <Button
+                  sx={{
+                    background: 'rgba(51,0,27,0.85)',
+                    color: 'white',
+                    '&:hover': {
+                      background: 'rgba(51,0,27,1)',
+                      boxShadow: '0 4px 15px rgba(51,0,27,0.4)',
+                    },
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  }}
+                  type="submit"
+                  variant="contained"
+                  disabled={isPending}
+                >
+                  {isPending ? <CircularProgress size={20} /> : 'Ingresar'}
+                </Button>
+              </>
+            )}
+            {clienteState?.estado === 1 && (
+              <Alert severity="info">
+                Usted fue registrado en la isla de atención al cliente del centro comercial. Su clave es su número de
+                identificación. Recomendamos cambiarla en el módulo Perfil → Cambiar contraseña.
+              </Alert>
+            )}
+          </Stack>
+        </form>
+
+        <NewClientForm
+          open={openDialog}
+          onClose={() => setOpenDialog(false)}
+          ciRuc={rucValue}
+          setClienteState={setClienteState}
+          onSubmitAfterCreate={onSubmit}
+        />
+      </Stack>
+    </Box>
   );
 }

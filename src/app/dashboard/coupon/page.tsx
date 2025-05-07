@@ -1,7 +1,20 @@
 
-import React from 'react';
+import React, { ChangeEvent, useEffect, useState } from 'react';
 
+<<<<<<< HEAD
 interface Cliente {
+=======
+export interface PageProps {
+  params?: any;
+  searchParams?: any;
+  [key: string]: any;  // Acepta cualquier propiedad adicional como 'logo'
+}
+interface CouponProps extends PageProps {
+  logo: string;
+  numCupon: string;
+  hoy: string;
+  cliente: {
+>>>>>>> origin/main
     nombre: string;
     apellidos: string;
     ruc: string;
@@ -17,6 +30,8 @@ interface CouponProps {
   campania: string;
   cupones: number; 
 }
+
+
 
 
 
