@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Alert,
   Button,
+  CircularProgress,
   FormControl,
   FormHelperText,
   InputLabel,
@@ -32,21 +33,34 @@ export function ResetPasswordForm(): React.JSX.Element {
   const router = useRouter();
   const [isCodeSent, setIsCodeSent] = React.useState(false);
   const [isPending, setIsPending] = React.useState(false);
-  const [snackbar, setSnackbar] = React.useState<{
-    open: boolean;
-    message: string;
-    severity: 'success' | 'error';
-  }>({ open: false, message: '', severity: 'success' });
+  const [showResend, setShowResend] = React.useState(false);
+  const [resendTimer, setResendTimer] = React.useState(0);
+  const [snackbar, setSnackbar] = React.useState({
+    open: false,
+    message: '',
+    severity: 'success' as 'success' | 'error',
+  });
 
   const {
     control,
     handleSubmit,
     setError,
+    setValue,
     getValues,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
   });
+
+  React.useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (resendTimer > 0) {
+      interval = setInterval(() => {
+        setResendTimer((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [resendTimer]);
 
   const onSubmit = async (values: FormValues) => {
     setIsPending(true);
@@ -60,6 +74,7 @@ export function ResetPasswordForm(): React.JSX.Element {
 
         setSnackbar({ open: true, message: data.msg || 'Correo enviado correctamente', severity: 'success' });
         setIsCodeSent(true);
+        setResendTimer(60);
       } catch (error: any) {
         const msg = error?.response?.data?.msg || 'Error al enviar el código';
         setSnackbar({ open: true, message: msg, severity: 'error' });
@@ -88,10 +103,15 @@ export function ResetPasswordForm(): React.JSX.Element {
         setSnackbar({ open: true, message: data.msg || 'Contraseña actualizada', severity: 'success' });
 
         setTimeout(() => {
-          router.push('/auth/sign-in-client'); // <-- 🔁 Redirigir luego de éxito
+          router.push('/auth/sign-in-client');
         }, 2000);
       } catch (error: any) {
         const msg = error?.response?.data?.msg || 'Error al cambiar la contraseña';
+
+        if (msg.toLowerCase().includes('inválido') || msg.toLowerCase().includes('expirado')) {
+          setShowResend(true);
+        }
+
         setSnackbar({ open: true, message: msg, severity: 'error' });
       } finally {
         setIsPending(false);
@@ -154,6 +174,48 @@ export function ResetPasswordForm(): React.JSX.Element {
                   </FormControl>
                 )}
               />
+
+              {showResend && (
+                <Stack direction="row" spacing={2} alignItems="center" mt={2}>
+                  {resendTimer > 0 ? (
+                    <>
+                      <CircularProgress size={20} variant="determinate" value={(resendTimer / 60) * 100} />
+                      <Typography variant="body2">Reenviar en {resendTimer} segundos</Typography>
+                    </>
+                  ) : (
+                    <Button
+                      variant="outlined"
+                      color="primary"
+                      onClick={async () => {
+                        try {
+                          const values = getValues();
+                          const { data } = await axiosClient.post('/api/validacion/validarMail', {
+                            correo: values.email,
+                            ruc: values.ruc,
+                          });
+
+                          setSnackbar({
+                            open: true,
+                            message: data.msg || 'Código reenviado',
+                            severity: 'success',
+                          });
+
+                          setValue('code', '');
+                          setValue('newPassword', '');
+                          setShowResend(false);
+                          setResendTimer(60);
+                        } catch (error: any) {
+                          const msg = error?.response?.data?.msg || 'Error al reenviar el código';
+                          setSnackbar({ open: true, message: msg, severity: 'error' });
+                        }
+                      }}
+                    >
+                      Reenviar código
+                    </Button>
+                  )}
+                </Stack>
+              )}
+
             </>
           )}
 
