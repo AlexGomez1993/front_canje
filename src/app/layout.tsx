@@ -12,10 +12,12 @@ export const viewport = { width: 'device-width', initialScale: 1 } satisfies Vie
 interface LayoutProps {
   children: React.ReactNode;
 }
-
+export const metadata = {
+  title: 'Sistema de Canjes SCALA',
+};
 export default function Layout({ children }: LayoutProps): React.JSX.Element {
   return (
-    <html lang="en">
+    <html lang="es">
       <body>
         <LocalizationProvider>
           <UserProvider>
