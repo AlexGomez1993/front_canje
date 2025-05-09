@@ -70,162 +70,191 @@ export function SignInForm(): React.JSX.Element {
     <Box
       sx={{
         minHeight: '100vh',
-        width: '100vw', // Añadir ancho completo de viewport
-        backgroundImage: 'url(/assets/fondo-scala.jpg)',
+        width: '100vw',
+        backgroundImage: 'url(/assets/fondo-scala.png)',
         backgroundSize: 'cover',
-        backgroundRepeat: 'no-repeat', // Evitar repetición de la imagen
-        backgroundAttachment: 'fixed', // Fijar fondo al hacer scroll (opcional)
         backgroundPosition: 'center',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        p: 5,
-        position: 'fixed', // Fijar posición
+        p: 0.5,
+        position: 'fixed',
         top: 0,
         left: 0,
       }}
     >
-      <Stack
-        spacing={3}
+      <Box
         sx={{
-          background: 'linear-gradient(155deg, rgba(51,0,27,0.9) 0%, rgba(190, 9, 85, 0.7) 100%)',
-          borderRadius: 2,
-          p: 4,
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
-          maxWidth: 450,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 4,
+          maxWidth: 800,
           width: '100%',
-          mx: 'auto',
-          color: 'white',
-          backdropFilter: 'blur(4px)',
-          border: '1px solid rgba(255,255,255,0.1)',
+          position: 'relative',
         }}
       >
-        <Typography
-          variant="h4"
+        <Box
+        component="img"
+        src="/assets/logoscala.png"
+        alt="Logo"
+        sx={{
+          width: 110,
+          height: 160,
+          borderRadius: 2,
+          boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+          transform: 'translateY(15px)', // Ajuste fino de alineación vertical
+          flexShrink: 0,
+          '@media (max-width: 400px)': {
+            transform: 'translateY(0)',
+            marginBottom: 2,
+            width: 100,
+            height: 140
+          }
+        }}
+      />
+        <Stack
+          spacing={3}
           sx={{
-            fontWeight: 800,
-            color: 'common.white',
-            textAlign: 'center',
-            textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+            background: 'linear-gradient(155deg, rgba(51,0,27,0.9) 0%, rgba(190, 9, 85, 0.7) 100%)',
+            borderRadius: 3,
+            p: 4,
+            boxShadow: '0 12px 40px rgba(0, 0, 0, 0.4)',
+            width: '100%',
+            maxWidth: 450,
+            color: 'white',
+            backdropFilter: 'blur(8px)',
+            border: '1px solid rgba(255,255,255,0.15)',
           }}
         >
-          Iniciar Sesión
-        </Typography>
-        <Divider sx={{ borderColor: 'rgba(255,255,255,0.2)' }} />
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <Stack spacing={2}>
-            <Controller
-              control={control}
-              name="username"
-              render={({ field }) => (
-                <FormControl error={Boolean(errors.username)}>
-                  <InputLabel
-                    sx={{
-                      color: 'rgba(255,255,255,0.7)',
-                      '&.Mui-focused': {
-                        color: 'rgba(255,255,255,0.9)',
-                      },
-                    }}
-                  >
-                    Username
-                  </InputLabel>
-                  <OutlinedInput
-                    sx={{
-                      color: 'white',
-                      '& .MuiOutlinedInput-notchedOutline': {
-                        borderColor: 'rgba(255,255,255,0.3)',
-                      },
-                      '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: 'rgba(255,255,255,0.5)',
-                      },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: 'rgba(51,0,27,0.7)',
-                        borderWidth: '2px',
-                      },
-                    }}
-                    {...field}
-                    label="Username"
-                  />
-                  {errors.username ? <FormHelperText>{errors.username.message}</FormHelperText> : null}
-                </FormControl>
-              )}
-            />
-            <Controller
-              control={control}
-              name="password"
-              render={({ field }) => (
-                <FormControl error={Boolean(errors.password)}>
-                  <InputLabel
-                    sx={{
-                      color: 'rgba(255,255,255,0.7)',
-                      '&.Mui-focused': {
-                        color: 'rgba(255,255,255,0.9)',
-                      },
-                    }}
-                  >
-                    Contraseña
-                  </InputLabel>
-                  <OutlinedInput
-                    sx={{
-                      color: 'white',
-                      '& .MuiOutlinedInput-notchedOutline': {
-                        borderColor: 'rgba(255,255,255,0.3)',
-                      },
-                      '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: 'rgba(255,255,255,0.5)',
-                      },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: 'rgba(51,0,27,0.7)',
-                        borderWidth: '2px',
-                      },
-                    }}
-                    {...field}
-                    endAdornment={
-                      showPassword ? (
-                        <EyeIcon
-                          cursor="pointer"
-                          fontSize="var(--icon-fontSize-md)"
-                          onClick={(): void => {
-                            setShowPassword(false);
-                          }}
-                        />
-                      ) : (
-                        <EyeSlashIcon
-                          cursor="pointer"
-                          fontSize="var(--icon-fontSize-md)"
-                          onClick={(): void => {
-                            setShowPassword(true);
-                          }}
-                        />
-                      )
-                    }
-                    label="Password"
-                    type={showPassword ? 'text' : 'password'}
-                  />
-                  {errors.password ? <FormHelperText>{errors.password.message}</FormHelperText> : null}
-                </FormControl>
-              )}
-            />
-            {errors.root ? <Alert color="error">{errors.root.message}</Alert> : null}
-            <Button
-              sx={{
-                background: 'rgba(51,0,27,0.85)',
-                color: 'white',
-                '&:hover': {
-                  background: 'rgba(51,0,27,1)',
-                  boxShadow: '0 4px 15px rgba(51,0,27,0.4)',
-                },
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              }}
-              disabled={isPending}
-              type="submit"
-              variant="contained"
-            >
-              Ingresar
-            </Button>
-          </Stack>
-        </form>
-      </Stack>
+          <Typography
+            variant="h4"
+            sx={{
+              fontWeight: 800,
+              color: 'common.white',
+              textAlign: 'center',
+              textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+            }}
+          >
+            Iniciar Sesión
+          </Typography>
+          <Divider sx={{ borderColor: 'rgba(255,255,255,0.2)' }} />
+
+          <form onSubmit={handleSubmit(onSubmit)}>
+          
+            <Stack spacing={2}>
+              <Controller
+                control={control}
+                name="username"
+                render={({ field }) => (
+                  <FormControl error={Boolean(errors.username)}>
+                    <InputLabel
+                      sx={{
+                        color: 'rgba(255,255,255,0.7)',
+                        '&.Mui-focused': {
+                          color: 'rgba(255,255,255,0.9)',
+                        },
+                      }}
+                    >
+                      Username
+                    </InputLabel>
+                    <OutlinedInput
+                      sx={{
+                        color: 'white',
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderColor: 'rgba(255,255,255,0.3)',
+                        },
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: 'rgba(255,255,255,0.5)',
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: 'rgba(51,0,27,0.7)',
+                          borderWidth: '2px',
+                        },
+                      }}
+                      {...field}
+                      label="Username"
+                    />
+                    {errors.username ? <FormHelperText>{errors.username.message}</FormHelperText> : null}
+                  </FormControl>
+                )}
+              />
+              <Controller
+                control={control}
+                name="password"
+                render={({ field }) => (
+                  <FormControl error={Boolean(errors.password)}>
+                    <InputLabel
+                      sx={{
+                        color: 'rgba(255,255,255,0.7)',
+                        '&.Mui-focused': {
+                          color: 'rgba(255,255,255,0.9)',
+                        },
+                      }}
+                    >
+                      Contraseña
+                    </InputLabel>
+                    <OutlinedInput
+                      sx={{
+                        color: 'white',
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderColor: 'rgba(255,255,255,0.3)',
+                        },
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: 'rgba(255,255,255,0.5)',
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: 'rgba(51,0,27,0.7)',
+                          borderWidth: '2px',
+                        },
+                      }}
+                      {...field}
+                      endAdornment={
+                        showPassword ? (
+                          <EyeIcon
+                            cursor="pointer"
+                            fontSize="var(--icon-fontSize-md)"
+                            onClick={(): void => {
+                              setShowPassword(false);
+                            }}
+                          />
+                        ) : (
+                          <EyeSlashIcon
+                            cursor="pointer"
+                            fontSize="var(--icon-fontSize-md)"
+                            onClick={(): void => {
+                              setShowPassword(true);
+                            }}
+                          />
+                        )
+                      }
+                      label="Password"
+                      type={showPassword ? 'text' : 'password'}
+                    />
+                    {errors.password ? <FormHelperText>{errors.password.message}</FormHelperText> : null}
+                  </FormControl>
+                )}
+              />
+              {errors.root ? <Alert color="error">{errors.root.message}</Alert> : null}
+              <Button
+                sx={{
+                  background: 'rgba(51,0,27,0.85)',
+                  color: 'white',
+                  '&:hover': {
+                    background: 'rgba(51,0,27,1)',
+                    boxShadow: '0 4px 15px rgba(51,0,27,0.4)',
+                  },
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                }}
+                disabled={isPending}
+                type="submit"
+                variant="contained"
+              >
+                Ingresar
+              </Button>
+            </Stack>
+          </form>
+        </Stack>
+      </Box>
     </Box>
   );
 }

@@ -29,17 +29,17 @@ export const kepple = {
 } satisfies PaletteRange;
 
 export const neonBlue = {
-  50: '#ecf0ff',
-  100: '#dde3ff',
-  200: '#c2cbff',
-  300: '#9ca7ff',
-  400: '#7578ff',
-  500: '#635bff',
-  600: '#4e36f5',
-  700: '#432ad8',
-  800: '#3725ae',
-  900: '#302689',
-  950: '#1e1650',
+  50: '#fdf2f5',  // Tinte claro suave
+  100: '#fad8e1',
+  200: '#f5b3c4',
+  300: '#ee8ea7',
+  400: '#e6688a',  // Transición al color base
+  500: '#ad2452',  // Color principal
+  600: '#8d1d44',  // Versión más oscura
+  700: '#6e1635',
+  800: '#4e1026',  // Tonos profundos
+  900: '#2f0917',
+  950: '#1a040d'   // Negro con matiz vino
 } satisfies PaletteRange;
 
 export const nevada = {

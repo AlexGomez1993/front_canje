@@ -112,7 +112,7 @@ export function SignInFormClient(): React.JSX.Element {
       sx={{
         minHeight: '100vh',
         width: '100vw',
-        backgroundImage: 'url(/assets/fondo-scala.jpg)',
+        backgroundImage: 'url(/assets/fondo-scala.png)',
         backgroundSize: 'cover',
         backgroundRepeat: 'no-repeat',
         backgroundPosition: 'center',

@@ -32,7 +32,10 @@ import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
-import { CheckCircle, ClockClockwise, FilePlus, XSquare } from '@phosphor-icons/react'; // Asegúrate de importar el ícono
+import { CheckCircle, ClockClockwise, FastForwardCircle, FilePlus, Receipt, UserCircle, XSquare } from '@phosphor-icons/react';
+import { UserCirclePlus } from '@phosphor-icons/react/dist/ssr';
+
+// Asegúrate de importar el ícono
 
 const floatAnimation = keyframes`
   0% { transform: translateY(0); }
@@ -996,20 +999,24 @@ const BotonesFactura = () => {
     >
       {' '}
       <Typography
-        variant="h1"
+        variant="h5"
         sx={{
-          fontWeight: 900,
-          mb: 6,
-          color: '#1a237e',
-          textShadow: '1px 1px 3px rgba(0,0,0,0.1)',
+          fontWeight: 'bold',
+          color: '#1976d2',
+          display: 'flex',
+          alignItems: 'center',
+          textTransform: 'uppercase',
+          letterSpacing: 1.5,
+          textShadow: '2px 2px 5px rgba(0, 0, 0, 0.2)',
         }}
       >
+        <Receipt style={{ marginRight: 8 }} />
         ADMINISTRACIÓN DE FACTURAS
       </Typography>
       <Grid container spacing={4} sx={{ maxWidth: 1200, margin: 'auto' }}>
         <Grid item xs={12} sm={6} md={3}>
           <StyledButton colorvariant="blue" onClick={() => setDialogOpen(true)}>
-          <IconWrapper className="iconWrapper">
+            <IconWrapper className="iconWrapper">
               {/* Reemplazar el ícono por una imagen */}
               <img
                 src="/assets/ingresar.png"
@@ -1030,7 +1037,7 @@ const BotonesFactura = () => {
         {/* Botón Facturas Aprobadas */}
         <Grid item xs={12} sm={6} md={3}>
           <StyledButton colorvariant="green" onClick={() => setAprobadasOpen(true)}>
-          <IconWrapper className="iconWrapper">
+            <IconWrapper className="iconWrapper">
               {/* Reemplazar el ícono por una imagen */}
               <img
                 src="/assets/aprobada.png"
@@ -1050,7 +1057,7 @@ const BotonesFactura = () => {
 
         <Grid item xs={12} sm={6} md={3}>
           <StyledButton colorvariant="red" onClick={() => setPendientesOpen(true)}>
-          <IconWrapper className="iconWrapper">
+            <IconWrapper className="iconWrapper">
               {/* Reemplazar el ícono por una imagen */}
               <img
                 src="/assets/pendiente.png"
