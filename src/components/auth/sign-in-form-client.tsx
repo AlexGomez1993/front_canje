@@ -159,21 +159,29 @@ export function SignInFormClient(): React.JSX.Element {
               name="ruc"
               render={({ field }) => (
                 <FormControl error={Boolean(errors.ruc)}>
-                  <InputLabel sx={{ color: 'rgba(255,255,255,0.7)' }}>C.I. / Pasaporte</InputLabel>
+                  <InputLabel sx={{
+                    color: 'white',
+                    '&.Mui-focused': {
+                      color: 'white',
+                    },
+                  }}>C.I. / Pasaporte</InputLabel>
                   <OutlinedInput
                     {...field}
                     label="C.I./ Pasaporte"
                     sx={{
                       color: 'white',
                       '& .MuiOutlinedInput-notchedOutline': {
-                        borderColor: 'rgba(255,255,255,0.3)',
+                        borderColor: 'white',
                       },
                       '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: 'rgba(255,255,255,0.5)',
+                        borderColor: 'white',
+                      },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        borderColor: 'white',
                       },
                     }}
                   />
-                  <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)' }}>
+                  <Typography variant="caption" sx={{ color: 'white)' }}>
                     * Recuerda si tienes pasaporte anteponer la letra P *
                   </Typography>
                   {errors.ruc && (
@@ -204,7 +212,12 @@ export function SignInFormClient(): React.JSX.Element {
                 name="password"
                 render={({ field }) => (
                   <FormControl error={Boolean(errors.password)}>
-                    <InputLabel>Contraseña</InputLabel>
+                    <InputLabel sx={{
+                    color: 'white',
+                    '&.Mui-focused': {
+                      color: 'white',
+                    },
+                  }}>Contraseña</InputLabel>
                     <OutlinedInput
                       {...field}
                       type={showPassword ? 'text' : 'password'}
@@ -215,6 +228,18 @@ export function SignInFormClient(): React.JSX.Element {
                           <EyeSlash onClick={() => setShowPassword(true)} />
                         )
                       }
+                      sx={{
+                        color: 'white',
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderColor: 'white',
+                        },
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: 'white',
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: 'white',
+                        },
+                      }}
                     />
                     {errors.password && (
                       <Typography variant="caption" color="error">
@@ -231,7 +256,7 @@ export function SignInFormClient(): React.JSX.Element {
             {(clienteState?.estado === 1 || clienteState?.estado === 3) && (
               <>
                 <div>
-                  <Link component={RouterLink} href={paths.auth.resetPassword} variant="subtitle2">
+                  <Link component={RouterLink} href={paths.auth.resetPassword} variant="subtitle2" sx={{ color: 'rgba(255,255,255,0.7)' }}>
                     Olvidaste tu Contraseña?
                   </Link>
                 </div>
