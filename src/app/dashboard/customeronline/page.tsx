@@ -33,8 +33,11 @@ import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
-import { CheckCircle, ClockClockwise, FilePlus, UserCircle, XSquare, PaperPlane, Invoice } from '@phosphor-icons/react'; // Asegúrate de importar el ícono
 import axiosClient from '@/lib/axiosClient';
+import { CheckCircle, ClockClockwise, FastForwardCircle, FilePlus, Receipt, UserCircle, XSquare, Invoice } from '@phosphor-icons/react';
+import { UserCirclePlus } from '@phosphor-icons/react/dist/ssr';
+
+// Asegúrate de importar el ícono
 
 const floatAnimation = keyframes`
   0% { transform: translateY(0); }
