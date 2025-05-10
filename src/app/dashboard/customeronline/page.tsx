@@ -10,6 +10,7 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  Divider,
   FormControl,
   FormControlLabel,
   Grid,
@@ -32,7 +33,8 @@ import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
-import { CheckCircle, ClockClockwise, FilePlus, XSquare } from '@phosphor-icons/react'; // Asegúrate de importar el ícono
+import { CheckCircle, ClockClockwise, FilePlus, UserCircle, XSquare, PaperPlane, Invoice } from '@phosphor-icons/react'; // Asegúrate de importar el ícono
+import axiosClient from '@/lib/axiosClient';
 
 const floatAnimation = keyframes`
   0% { transform: translateY(0); }
@@ -129,19 +131,32 @@ const getEstadoNombre = (estado: number): string => {
 };
 
 const StyledButton = styled(Button)(({ theme, colorvariant }: { theme?: any; colorvariant: string }) => ({
-  padding: theme.spacing(6),
-  borderRadius: theme.shape.borderRadius * 4,
-  boxShadow: theme.shadows[6],
+  width: '100%', // se adapta al contenedor del Grid
+  minHeight: '220px',
+  maxWidth: '250px', // evita que crezca indefinidamente
+  margin: '0 auto', // centra horizontalmente
+  borderRadius: theme.shape.borderRadius * 2,
+  boxShadow: theme.shadows[4],
   transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)',
   display: 'flex',
   flexDirection: 'column',
-  gap: theme.spacing(4),
+  alignItems: 'center',
+  justifyContent: 'center',
+  //gap: theme.spacing(2),
+  textAlign: 'center',
   border: '3px solid',
+  borderColor:
+    colorvariant === 'blue'
+      ? theme.palette.primary.main
+      : colorvariant === 'green'
+        ? theme.palette.success.main
+        : theme.palette.error.main,
   position: 'relative',
   overflow: 'hidden',
+  backgroundColor: '#fff',
   '&:hover': {
     transform: 'translateY(-4px)',
-    boxShadow: theme.shadows[8],
+    boxShadow: theme.shadows[6],
     '&:before': {
       opacity: 0.1,
     },
@@ -150,7 +165,7 @@ const StyledButton = styled(Button)(({ theme, colorvariant }: { theme?: any; col
       boxShadow: theme.shadows[4],
     },
     '& .icon': {
-      animation: `${floatAnimation} 2s ease-in-out infinite`,
+      animation: `float 2s ease-in-out infinite`,
     },
   },
   '&:before': {
@@ -165,6 +180,7 @@ const StyledButton = styled(Button)(({ theme, colorvariant }: { theme?: any; col
     transition: 'opacity 300ms ease',
   },
 }));
+
 
 const IconWrapper = styled('div')(({ theme }) => ({
   padding: theme.spacing(3),
@@ -434,17 +450,11 @@ const AprobadasDialog = ({ open, onClose }: AprobadasDialogProps) => {
       const cedula = user.ruc;
       console.log(cliente_id);
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/facturas?estadoFactura=2&campania_id=1&page=${currentPage}&limit=${pageSize}&cliente_id=${cliente_id}&ruc=${cedula}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+      const response = await axiosClient.get(
+        `/api/facturas?estadoFactura=2&campania_id=1&page=${currentPage}&limit=${pageSize}&cliente_id=${cliente_id}`
       );
-      const result = await response.json();
 
-      const mappedData = result.data.map((factura: Factura) => ({
+      const mappedData = response.data.data.map((factura: Factura) => ({
         id: factura.id,
         fecha_registro: factura.fechaRegistro,
         campania: factura.campanias?.nombre || '',
@@ -459,10 +469,8 @@ const AprobadasDialog = ({ open, onClose }: AprobadasDialogProps) => {
         observacion: factura.observacion || '',
       }));
 
-      if (!response.ok) throw new Error('Error al obtener datos');
-
       setAprobadasData(mappedData); // usamos el mapeado
-      setTotalPages(Math.ceil(result.total / pageSize));
+      setTotalPages(Math.ceil(response.data.total / pageSize));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido');
     } finally {
@@ -605,17 +613,11 @@ const PendienteDialog = ({ open, onClose }: PendienteDialogProps) => {
       const cedula = user.ruc;
       console.log(cliente_id);
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/facturas?estadoFactura=1&campania_id=1&page=${currentPage}&limit=${pageSize}&cliente_id=${cliente_id}&ruc=${cedula}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+      const response = await axiosClient.get(
+        `/api/facturas?estadoFactura=1&campania_id=1&page=${currentPage}&limit=${pageSize}&cliente_id=${cliente_id}`
       );
-      const result = await response.json();
 
-      const mappedData = result.data.map((factura: Factura) => ({
+      const mappedData = response.data.data.map((factura: Factura) => ({
         id: factura.id,
         fecha_registro: factura.fechaRegistro,
         campania: factura.campanias?.nombre || '',
@@ -630,10 +632,8 @@ const PendienteDialog = ({ open, onClose }: PendienteDialogProps) => {
         observacion: factura.observacion || '',
       }));
 
-      if (!response.ok) throw new Error('Error al obtener datos');
-
       setPendientesData(mappedData); // usamos el mapeado
-      setTotalPages(Math.ceil(result.total / pageSize));
+      setTotalPages(Math.ceil(response.data.data.total / pageSize));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido');
     } finally {
@@ -776,17 +776,10 @@ const RechazadasDialog = ({ open, onClose }: RechazadasDialogProps) => {
       const cedula = user.ruc;
       console.log(cliente_id);
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/facturas?estadoFactura=4&campania_id=1&page=${currentPage}&limit=${pageSize}&cliente_id=${cliente_id}&ruc=${cedula}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      const result = await response.json();
+      const response = await axiosClient.get(
+        `/api/facturas?estadoFactura=4&campania_id=1&page=${currentPage}&limit=${pageSize}&cliente_id=${cliente_id}`);
 
-      const mappedData = result.data.map((factura: Factura) => ({
+      const mappedData = response.data.data.map((factura: Factura) => ({
         id: factura.id,
         fecha_registro: factura.fechaRegistro,
         campania: factura.campanias?.nombre || '',
@@ -801,10 +794,8 @@ const RechazadasDialog = ({ open, onClose }: RechazadasDialogProps) => {
         observacion: factura.observacion || '',
       }));
 
-      if (!response.ok) throw new Error('Error al obtener datos');
-
       setRechazadasData(mappedData); // usamos el mapeado
-      setTotalPages(Math.ceil(result.total / pageSize));
+      setTotalPages(Math.ceil(response.data.total / pageSize));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido');
     } finally {
@@ -962,21 +953,11 @@ const BotonesFactura = () => {
         },
       };
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/facturas/facturasWeb`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
+      const response = await axiosClient.post(`/api/facturas/facturasWeb`, {
+        payload
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Error del servidor');
-      }
-
-      const result = await response.json();
+      const result = await response.data;
       console.log('Respuesta del backend:', result);
       alert('Factura registrada correctamente.');
     } catch (error) {
@@ -992,32 +973,53 @@ const BotonesFactura = () => {
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
+        justifyContent: ' center',
+        textAlign: 'center'
       }}
     >
-      {' '}
-      <Typography
-        variant="h1"
+      <Box sx={{ width: '100%' }}>
+        <Typography
+          variant="h4"
+          sx={{
+            fontWeight: 'bold',
+            color: '#1976d2',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            textTransform: 'uppercase',
+            letterSpacing: 1.5,
+            textShadow: '2px 2px 5px rgba(0, 0, 0, 0.2)',
+          }}
+        >
+          <Invoice size={32} />
+          Administración de Facturas
+        </Typography>
+        <Divider sx={{ marginBottom: 3 }} />
+      </Box>
+
+      <Grid
+        container
+        spacing={4}
         sx={{
-          fontWeight: 900,
-          mb: 6,
-          color: '#1a237e',
-          textShadow: '1px 1px 3px rgba(0,0,0,0.1)',
+          maxWidth: 1200,
+          margin: 'auto',
+          justifyContent: 'center',
+          textAlign: 'center',
         }}
+        justifyContent="center"
+        alignItems="stretch"
       >
-        ADMINISTRACIÓN DE FACTURAS
-      </Typography>
-      <Grid container spacing={4} sx={{ maxWidth: 1200, margin: 'auto' }}>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={3} lg={3} sx={{ borderColor: 'red' }}>
           <StyledButton colorvariant="blue" onClick={() => setDialogOpen(true)}>
-          <IconWrapper className="iconWrapper">
-              {/* Reemplazar el ícono por una imagen */}
+            <IconWrapper className="iconWrapper">
               <img
                 src="/assets/ingresar.png"
                 alt="Facturas Ingreso"
                 style={{
-                  width: '80px', // Ajusta el tamaño según necesites
-                  height: '80px',
+                  width: '60px',
+                  height: '60px',
                   objectFit: 'contain',
+                  marginBottom: '8px'
                 }}
               />
             </IconWrapper>
@@ -1027,16 +1029,14 @@ const BotonesFactura = () => {
           </StyledButton>
         </Grid>
 
-        {/* Botón Facturas Aprobadas */}
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={3} lg={3}>
           <StyledButton colorvariant="green" onClick={() => setAprobadasOpen(true)}>
-          <IconWrapper className="iconWrapper">
-              {/* Reemplazar el ícono por una imagen */}
+            <IconWrapper className="iconWrapper">
               <img
                 src="/assets/aprobada.png"
                 alt="Facturas Aprobadas"
                 style={{
-                  width: '80px', // Ajusta el tamaño según necesites
+                  width: '80px',
                   height: '80px',
                   objectFit: 'contain',
                 }}
@@ -1048,15 +1048,14 @@ const BotonesFactura = () => {
           </StyledButton>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={3} lg={3}>
           <StyledButton colorvariant="red" onClick={() => setPendientesOpen(true)}>
-          <IconWrapper className="iconWrapper">
-              {/* Reemplazar el ícono por una imagen */}
+            <IconWrapper className="iconWrapper">
               <img
                 src="/assets/pendiente.png"
                 alt="Facturas Pendientes"
                 style={{
-                  width: '80px', // Ajusta el tamaño según necesites
+                  width: '80px',
                   height: '80px',
                   objectFit: 'contain',
                 }}
@@ -1067,15 +1066,15 @@ const BotonesFactura = () => {
             </Typography>
           </StyledButton>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+
+        <Grid item xs={12} sm={6} md={3} lg={3}>
           <StyledButton colorvariant="red" onClick={() => setRechazadasOpen(true)}>
             <IconWrapper className="iconWrapper">
-              {/* Reemplazar el ícono por una imagen */}
               <img
                 src="/assets/rechazada.png"
                 alt="Facturas Rechazadas"
                 style={{
-                  width: '80px', // Ajusta el tamaño según necesites
+                  width: '80px',
                   height: '80px',
                   objectFit: 'contain',
                 }}
