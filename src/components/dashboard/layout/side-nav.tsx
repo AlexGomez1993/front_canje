@@ -36,6 +36,8 @@ export function SideNav(): React.JSX.Element {
           alignItems: 'center',
           justifyContent: 'center',
           bgcolor: 'var(--SideNav-background)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
         }}
       >
         <CircularProgress color="primary" />
@@ -54,7 +56,7 @@ export function SideNav(): React.JSX.Element {
   return (
     <Box
       sx={{
-        '--SideNav-background': 'var(--mui-palette-neutral-950)',
+        background: 'linear-gradient(to bottom, rgba(255,255,255,1180) 0%, rgb(175, 17, 70) 32%, rgba(89, 5, 34, 0.9) 100%)',
         '--SideNav-color': 'var(--mui-palette-common-white)',
         '--NavItem-color': 'var(--mui-palette-neutral-300)',
         '--NavItem-hover-background': 'rgba(255, 255, 255, 0.04)',
@@ -80,13 +82,32 @@ export function SideNav(): React.JSX.Element {
       }}
     >
       <Stack spacing={2} sx={{ p: 3 }}>
-        <Box component={RouterLink} href={paths.home} sx={{ display: 'inline' }}>
-          <Logo color="light" height={55} width={60} />
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            width: '100%',
+            height: '100%',
+            padding: 2,
+            backgroundColor: 'transparent',
+          }}
+        >
+          <Logo
+            color="light"
+            sx={{
+              height: 195,
+              width: 90,
+              objectFit: 'contain',
+              margin: '0 auto',
+              display: 'block',
+            }}
+          />
         </Box>
         <Box
           sx={{
             alignItems: 'center',
-            backgroundColor: 'var(--mui-palette-neutral-950)',
+            backgroundColor: 'rgba(89, 5, 34, 0.9)',
             border: '1px solid var(--mui-palette-neutral-700)',
             borderRadius: '12px',
             cursor: 'pointer',

@@ -59,8 +59,7 @@ export function MobileNav({ open, onClose }: MobileNavProps): React.JSX.Element 
     <Drawer
       PaperProps={{
         sx: {
-          '--MobileNav-background': 'var(--mui-palette-neutral-950)',
-          '--MobileNav-color': 'var(--mui-palette-common-white)',
+          background: 'linear-gradient(to bottom, rgba(255,255,255,1180) 0%, rgb(175, 17, 70) 32%, rgba(89, 5, 34, 0.9) 100%)',
           '--NavItem-color': 'var(--mui-palette-neutral-300)',
           '--NavItem-hover-background': 'rgba(255, 255, 255, 0.04)',
           '--NavItem-active-background': 'var(--mui-palette-primary-main)',
@@ -84,13 +83,32 @@ export function MobileNav({ open, onClose }: MobileNavProps): React.JSX.Element 
       open={open}
     >
       <Stack spacing={2} sx={{ p: 3 }}>
-        <Box component={RouterLink} href={paths.home} sx={{ display: 'inline-flex' }}>
-          <Logo color="light" height={32} width={122} />
+      <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            width: '100%',
+            height: '100%',
+            padding: 2,
+            backgroundColor: 'transparent',
+          }}
+        >
+          <Logo
+            color="light"
+            sx={{
+              height: 195,
+              width: 90,
+              objectFit: 'contain',
+              margin: '0 auto',
+              display: 'block',
+            }}
+          />
         </Box>
         <Box
           sx={{
             alignItems: 'center',
-            backgroundColor: 'var(--mui-palette-neutral-950)',
+            backgroundColor: 'rgba(89, 5, 34, 0.9)',
             border: '1px solid var(--mui-palette-neutral-700)',
             borderRadius: '12px',
             cursor: 'pointer',
@@ -102,7 +120,7 @@ export function MobileNav({ open, onClose }: MobileNavProps): React.JSX.Element 
             <Typography color="var(--mui-palette-neutral-400)" variant="body2">
               Usuario
             </Typography>
-            <Typography color="inherit" variant="subtitle1">
+            <Typography color="rgb(255, 255, 255)" variant="subtitle1">
               {user ? user.nombre + ' ' + user.apellidos : null}
             </Typography>
           </Box>
