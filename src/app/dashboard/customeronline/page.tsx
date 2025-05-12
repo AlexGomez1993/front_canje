@@ -22,6 +22,7 @@ import {
   styled,
   TextField,
   Typography,
+  DialogContentText,
   useTheme,
 } from '@mui/material';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -34,7 +35,7 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import axiosClient from '@/lib/axiosClient';
-import { CheckCircle, ClockClockwise, FastForwardCircle, FilePlus, Receipt, UserCircle, XSquare, Invoice } from '@phosphor-icons/react';
+import { CheckCircle, ClockClockwise, Warning, FastForwardCircle, FilePlus, Receipt, UserCircle, XSquare, Invoice } from '@phosphor-icons/react';
 import { UserCirclePlus } from '@phosphor-icons/react/dist/ssr';
 
 // Asegúrate de importar el ícono
@@ -57,6 +58,42 @@ interface FacturaAprobada {
   estado: string;
   cupones: number;
   observacion: string;
+}
+// Componente de diálogo reutilizable
+function ResponseDialog({ open, onClose, success, title, message }: {
+  open: boolean;
+  onClose: () => void;
+  success: boolean;
+  title: string;
+  message: string;
+}) {
+  return (
+    <Dialog open={open} onClose={onClose}>
+      <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        {success ? (
+          <CheckCircle size={24} color="#4CAF50" weight="fill" />
+        ) : (
+          <Warning size={24} color="#FF5252" weight="fill" />
+        )}
+        {title}
+      </DialogTitle>
+      <DialogContent>
+        <DialogContentText sx={{ color: success ? 'text.primary' : 'error.main' }}>
+          {message}
+        </DialogContentText>
+      </DialogContent>
+      <DialogActions>
+        <Button 
+          onClick={onClose} 
+          color={success ? 'primary' : 'secondary'}
+          variant="contained"
+          sx={{ textTransform: 'none' }}
+        >
+          Aceptar
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
 }
 interface Factura {
   id: number;
@@ -921,6 +958,11 @@ const BotonesFactura = () => {
   const [aprobadasOpen, setAprobadasOpen] = useState(false);
   const [pendientesOpen, setPendientesOpen] = useState(false);
   const [rechazadasOpen, setRechazadasOpen] = useState(false);
+  const [dialogData, setDialogData] = useState({
+    success: false,
+    title: '',
+    message: ''
+  });
   const handleSubmitFactura = async (formData: ProcessedFormData) => {
     try {
       const token = localStorage.getItem('custom-auth-token');
@@ -962,9 +1004,21 @@ const BotonesFactura = () => {
 
       const result = await response.data;
       console.log('Respuesta del backend:', result);
-      alert('Factura registrada correctamente.');
+      setDialogData({
+        success: true,
+        title: 'Operación exitosa',
+        message: 'Factura registrada correctamente.'
+      });
+      setDialogOpen(true);
     } catch (error) {
       console.error('Error al registrar factura:', error);
+      
+      setDialogData({
+        success: false,
+        title: 'Error en el registro',
+        message: 'Ocurrió un error al procesar la factura. Por favor intente nuevamente.'
+      });
+      setDialogOpen(true);
     }
   };
   return (

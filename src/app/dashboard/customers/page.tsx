@@ -33,7 +33,7 @@ import { PaymentMethod, PaymentMethodResponse } from '@/types/payment_method';
 import { Campaign, CampaignPromotions, CampaignResponse } from '@/types/campaign';
 import { Promotion } from '@/types/promotion';
 import { CustomerInvoice, Invoice } from '@/types/invoice';
-import { PlusCircle, Trash } from '@phosphor-icons/react';
+import { PlusCircle, TipJar, Trash } from '@phosphor-icons/react';
 import { Store } from '@/types/comercial_store';
 import { CustomerBalance } from '@/types/customerBalance';
 import { useUser } from '@/hooks/use-user';
@@ -685,7 +685,19 @@ export default function FacturaForm() {
   // );
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" align="center" gutterBottom>
+       <Typography
+        variant="h5"
+        sx={{
+          fontWeight: 'bold',
+          color: '#1976d2',
+          display: 'flex',
+          alignItems: 'center',
+          textTransform: 'uppercase',
+          letterSpacing: 1.5,
+          textShadow: '2px 2px 5px rgba(0, 0, 0, 0.2)',
+        }}
+      >
+        <TipJar style={{ marginRight: 8 }} />
         Nueva Factura
       </Typography>
       <Grid container spacing={2}>
