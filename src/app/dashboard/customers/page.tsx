@@ -85,29 +85,13 @@ export default function FacturaForm() {
   const [local, setLocal] = React.useState<string>('0');
   const [monto, setMonto] = React.useState('');
   const [facturaNum, setFacturaNum] = React.useState('');
-  const [ruc, setRuc] = React.useState('');
   const [openDialog, setOpenDialog] = React.useState(false);
   const [locales, setLocales] = useState<Store[]>([]);
   const [campanias, setCampanias] = useState<Campaign[]>([]);
   const [formasPago, setFormasPago] = useState<PaymentMethod[]>([]);
-  const [openCouponDialog, setOpenCouponDialog] = React.useState(false); // Estado para controlar el modal del cupón
-  const [cuponData, setCuponData] = React.useState<
-    {
-      logo: string;
-      numCupon: string;
-      hoy: string;
-      cliente: {
-        nombre: string;
-        apellidos: string;
-        ruc: string;
-        telefono: string;
-        celular: string;
-        direccion: string;
-      };
-      campania: string;
-      cupones: number;
-    }[]
-  >([]);
+  const [cuponesPorImprimir, setCuponesPorImprimir] = useState<any[]>([]);
+  const [indiceCampania, setIndiceCampania] = useState(0);
+  const [openCuponDialog, setOpenCuponDialog] = useState(false);
   const [cliente, setCliente] = React.useState<Cliente>({
     id: '',
     nombres: '',
@@ -170,27 +154,43 @@ export default function FacturaForm() {
     }
   }, [campanias]);
   // Función para manejar el clic en el botón Guardar
-  const handleGuardar = () => {
-    // const cuponesData = CAMPAÑAS_ACTIVAS.filter((campaña) => totalCuponesPorCampaña[campaña.nombre] > 0).map(
-    //   (campaña) => ({
-    //     logo: 'img/comercioLogo.png',
-    //     numCupon: '123456',
-    //     hoy: new Date().toLocaleDateString(),
-    //     cliente: {
-    //       nombre: 'Jean',
-    //       apellidos: 'Scala',
-    //       ruc: '1234567890',
-    //       telefono: '022222222',
-    //       celular: '0999999999',
-    //       direccion: 'SCALA SHOPPING',
-    //     },
-    //     campania: campaña.nombre,
-    //     cupones: totalCuponesPorCampaña[campaña.nombre],
-    //   })
-    // );
-    // setCuponData(cuponesData);
-    // setOpenCouponDialog(true);
+  const handleGuardar = async () => {
+    try {
+      if (!facturasIngreso || !facturasIngreso.campanias.length) {
+        console.warn("No hay facturas para enviar.");
+        return;
+      }
+
+      const body = {
+        facturasCliente: facturasIngreso,
+      };
+
+      const response = await axiosClient.post('/api/facturas/facturasIsla', body);
+
+      if (response.status === 200 || response.status === 201) {
+        const { cuponesImprimir } = response.data;
+
+        if (cuponesImprimir?.length) {
+          setCuponesPorImprimir(cuponesImprimir);
+          setIndiceCampania(0);
+          setOpenCuponDialog(true);
+        }
+
+        setFacturasIngreso({
+          cliente_id: 0,
+          usuario_id: 0,
+          ruc: '',
+          campanias: [],
+        });
+      } else {
+        console.error("Error al enviar facturas:", response.status, response.data);
+      }
+
+    } catch (error: any) {
+      console.error("Error en la solicitud:", error?.response?.data || error.message);
+    }
   };
+
   const handleCampaignChange = (index: number, campaignId: number | string) => {
     const campania: Campaign | undefined = campanias.find(c => c.id === campaignId);
     const primeraPromo = campania ? campania.promociones![0] : undefined;
@@ -249,155 +249,6 @@ export default function FacturaForm() {
       const updatedRows = selectedRows.filter((_, i) => i !== index);
       setSelectedRows(updatedRows);
     }
-  };
-
-  const handleImprimirCupon = () => {
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      printWindow.document.write(`
-        <html>
-          <head>
-            <title>Cupones</title>
-            <style>
-              @media print {
-                @page {
-                  size: 72mm 200mm !important;
-                  margin: 0 !important;
-                  padding: 0 !important;
-                }
-                
-                body {
-                  margin: 0 !important;
-                  padding: 0 !important;
-                  -webkit-print-color-adjust: exact;
-                  print-color-adjust: exact;
-                }
-                
-                .page-container {
-                  height: 200mm;
-                  position: relative;
-                  overflow: hidden;
-                }
-  
-                .coupon {
-                  width: 68mm;
-                  height: 95mm;
-                  padding: 2mm;
-                  margin: 2.5mm auto;
-                  font-family: 'Arial Narrow', sans-serif;
-                  font-size: 8pt;
-                  box-sizing: border-box;
-                  border: 1px solid #000;
-                  position: relative;
-                }
-  
-                .coupon:first-child {
-                  margin-top: 5mm;
-                }
-  
-                .coupon:last-child {
-                  margin-bottom: 5mm;
-                }
-  
-                .cut-guide {
-                  position: absolute;
-                  left: 0;
-                  right: 0;
-                  height: 0;
-                  border-top: 1px dashed red;
-                  z-index: 999;
-                }
-  
-                .cut-guide-top {
-                  top: 100mm;
-                }
-  
-                .cut-guide-bottom {
-                  top: 105mm;
-                }
-  
-                img.logo {
-                  width: 10mm;
-                  margin: 0 auto 2mm;
-                  display: block;
-                }
-                
-                h2 {
-                  font-size: 5pt;
-                  text-align: center;
-                  margin: 1mm 0;
-                }
-  
-                .nota {
-                  font-size: 7pt;
-                  position: absolute;
-                  bottom: 2mm;
-                  left: 2mm;
-                  right: 2mm;
-                }
-              }
-            </style>
-          </head>
-          <body>
-            ${chunkArray(cuponData, 2)
-          .map(
-            (pair) => `
-              <div class="page-container">
-                <div class="cut-guide cut-guide-top"></div>
-                <div class="cut-guide cut-guide-bottom"></div>
-                ${pair
-                .map(
-                  (data) => `
-                  <div class="coupon">
-                    <img src="${data.logo}" class="logo" alt="Logo">
-                    
-                    <h2>SCALA SHOPPING</h2>
-                    
-                    <p><strong>N° CUPÓN:</strong> ${data.numCupon}</p>
-                    <p><strong>FECHA:</strong> ${data.hoy}</p>
-                    <p><strong>CLIENTE:</strong> ${data.cliente.nombre} ${data.cliente.apellidos}</p>
-                    <p><strong>CI/RUC:</strong> ${data.cliente.ruc}</p>
-                    <p><strong>TELÉFONO:</strong> ${data.cliente.telefono}</p>
-                    <p><strong>CELULAR:</strong> ${data.cliente.celular}</p>
-                    <p><strong>DIRECCIÓN:</strong> ${data.cliente.direccion}</p>
-                    <p><strong>CAMPAÑA:</strong> ${data.campania}</p>
-                    <p><strong>CUPONES:</strong> ${data.cupones}</p>
-                    
-                    <div class="nota">
-                      <strong>Nota:</strong> Favor conservar sus facturas.<br>
-                      “El cliente para participar en la promoción confiere voluntariamente sus datos personales, y autoriza a que
-                       los mismos sean recopilados y utilizados para las campañas del Centro Comercial, tratados de conformidad con
-                       la Ley Orgánica de Protección de Datos Personales. Estos no serán transferidos a terceros. Si el cliente no
-                       desea constar en la base de datos del centro comercial, puede solicitar su eliminación al correo
-                       info-scala@smo.ec.”
-                    </div>
-                  </div>
-                `
-                )
-                .join('')}
-              </div>
-            `
-          )
-          .join('')}
-          </body>
-        </html>
-      `);
-
-      printWindow.document.close();
-      printWindow.onload = () => {
-        setTimeout(() => {
-          printWindow.print();
-          printWindow.onafterprint = () => printWindow.close();
-        }, 500);
-      };
-    }
-  };
-  const chunkArray = <T,>(arr: T[], size: number): T[][] => {
-    return arr.reduce((chunks: T[][], item: T, index: number) => {
-      if (index % size === 0) chunks.push([]);
-      chunks[chunks.length - 1].push(item);
-      return chunks;
-    }, []);
   };
 
   const obtenerClientePorRuc = async (ruc: string) => {
@@ -467,222 +318,213 @@ export default function FacturaForm() {
     };
     setSelectedRows(newRows);
   }
-  /* const agregarFactura = async () => {
+  const obtenerSaldoInicialPromocion = async (
+    facturasIngreso: CustomerInvoice,
+    cliente_id: number,
+    campania_id: number,
+    promocion_id: number,
+    saldoActualPorPromocion: { [key: string]: number }
+  ): Promise<number> => {
+    const key = `${campania_id}-${promocion_id}`;
 
-    console.log('ingresa factura');
-    console.log('selectedCampania:', selectedRows);
-
-    if (!selectedRows) return;
-    const saldosCliente: CustomerBalance[] = await axiosClient.post('/api/saldosCliente', { cliente_id: cliente.id })
-    const localData = locales.find((l) => l.id == parseInt(local));
-    const montoFactura = Number(monto);
-    const cuponesLocal = localData?.numcupones
-    const user_id = user?.id
-
-    {
-      selectedRows.map((c: CampaignPromotions, index) => {
-        const formaPago = formasPago.find((fp) => fp.id === c.forma_pago);
-        const factor = formaPago?.factor || 1;
-        const montoMinimo = Number(c.promocion_montominimo);
-
-        if (c.campania_tipoConfig == 1) {
-          const saldoInicialCliente: CustomerBalance | undefined = saldosCliente.find((s) => s.campania_id == c.campania_id && s.promocion_id == c.promocion_id && s.cliente_id == parseInt(cliente.id!))
-
-          var saldoInicialValor = saldoInicialCliente ? parseFloat(saldoInicialCliente.saldo) : 0;
-          actualizarSaldoInicial(saldoInicialValor,index)
-          var total = saldoInicialValor + montoFactura;
-          var cantidadCupones = Math.floor(total / montoMinimo) * factor * parseInt(cuponesLocal!);
-          actualizarCupones(cantidadCupones,index)
-          var nuevoSaldo = total % montoMinimo;
-          actualizarSaldo(nuevoSaldo,index);
-        }
-        if (c.campania_tipoConfig == 2) {
-          var total = montoFactura;
-          var cantidadCupones = Math.floor(total / montoMinimo) * factor * parseInt(cuponesLocal!);
-          actualizarCupones(cantidadCupones,index)
-          saldoInicialValor= 0;
-        }
-
-        
-        const nuevaFactura: Factura = {
-          local_nombre:localData!.nombre,
-          local_id:localData!.id.toString(),
-          numeroFactura: facturaNum,
-          formaPago_nombre: formaPago!.nombre,
-          formaPago_id: formaPago!.id.toString(),
-          promocion_nombre: c.promocion_nombre!,
-          promocion_id: c.promocion_id!.toString(),
-          campania_nombre: c.campania_nombre!,
-          campania_id: c.campania_id!.toString(),
-          montoFactura:monto,
-          saldoAnterior: c.saldo_inicial!,
-          cupones: c.total_cupones!
-        };
-
-        const nuevasFacturas = [...facturasIngreso, nuevaFactura];
-        setFacturasIngreso(nuevasFacturas);
-        console.log('nuevasFacturas', nuevasFacturas)
-      })
+    if (saldoActualPorPromocion[key] !== undefined) {
+      return saldoActualPorPromocion[key];
     }
 
-  }; */
+    const saldoExistente = facturasIngreso?.campanias
+      .find((camp) => camp.id === campania_id)
+      ?.promociones.find((p) => p.id === promocion_id)?.nuevoSaldo;
+
+    if (saldoExistente !== undefined) {
+      const saldo = parseFloat(saldoExistente);
+      saldoActualPorPromocion[key] = saldo;
+      return saldo;
+    }
+
+    const response = await axiosClient.post('/api/saldosCliente', {
+      cliente_id,
+    });
+
+    const saldoInicialCliente = response.data.data.find(
+      (saldo: CustomerBalance) =>
+        saldo.campania_id === campania_id && saldo.promocion_id === promocion_id
+    );
+
+    const saldo = saldoInicialCliente ? parseFloat(saldoInicialCliente.saldo) : 0;
+    saldoActualPorPromocion[key] = saldo;
+    return saldo;
+  };
 
   const agregarFactura = async () => {
-    console.log('ingresa factura');
-    console.log('selectedCampania:', selectedRows);
-
     if (!selectedRows || selectedRows.length === 0) return;
-
-    // Validar que cliente y user estén disponibles
-    if (!cliente?.id || !cliente?.ciRuc || !user?.id) {
-        console.warn('Cliente o usuario no están disponibles todavía');
-        return;
-    }
+    if (!cliente?.id || !cliente?.ciRuc || !user?.id) return;
 
     const localData = locales.find((l) => l.id == parseInt(local));
     const montoFactura = Number(monto);
-    const cuponesLocal = localData?.numcupones;
+    const cuponesLocal = localData?.numcupones ?? 0;
     const user_id = user.id;
 
-    // Clonar el estado actual de facturasIngreso
     let nuevaFacturaIngreso: CustomerInvoice = { ...facturasIngreso };
 
-    // Inicializar si no están asignados
     if (!nuevaFacturaIngreso.cliente_id || nuevaFacturaIngreso.cliente_id === 0) {
-        nuevaFacturaIngreso.cliente_id = parseInt(cliente.id);
-        nuevaFacturaIngreso.usuario_id = parseInt(user_id);
-        nuevaFacturaIngreso.ruc = cliente.ciRuc;
-        nuevaFacturaIngreso.campanias = []; // Asegura que esté inicializado
+      nuevaFacturaIngreso.cliente_id = parseInt(cliente.id);
+      nuevaFacturaIngreso.usuario_id = parseInt(user_id);
+      nuevaFacturaIngreso.ruc = cliente.ciRuc;
+      nuevaFacturaIngreso.campanias = [];
     }
 
-    // Objeto para mantener el saldo actual por cada promoción dentro de la sesión
     const saldoActualPorPromocion: { [key: string]: number } = {};
 
     for (const c of selectedRows) {
-        const formaPago = formasPago.find((fp) => fp.id === c.forma_pago);
-        const factor = formaPago?.factor || 1;
-        const montoMinimo = Number(c.promocion_montominimo);
-        let saldoInicialValor = 0;
-        let cantidadCupones = 0;
-        let nuevoSaldoCalculado = 0;
+      const formaPago = formasPago.find((fp) => fp.id === c.forma_pago);
+      const factor = formaPago?.factor || 1;
+      const montoMinimo = Number(c.promocion_montominimo);
+      let saldoInicialValor = 0;
+      let cantidadCupones = 0;
+      let nuevoSaldoCalculado = 0;
 
-        const promocionKey = `${c.campania_id}-${c.promocion_id}`;
+      const promocionKey = `${c.campania_id}-${c.promocion_id}`;
 
-        if (c.campania_tipoConfig == 1) {
-            // Si ya tenemos un saldo actual para esta promoción, usarlo
-            if (saldoActualPorPromocion[promocionKey] !== undefined) {
-                saldoInicialValor = saldoActualPorPromocion[promocionKey];
-                console.log(`Usando saldo actual para ${promocionKey}:`, saldoInicialValor);
-            } else {
-                // Si no, obtener el saldo inicial del cliente (solo la primera vez para esta promoción)
-                const response = await axiosClient.post('/api/saldosCliente', {
-                    cliente_id: cliente.id,
-                    campania_id: c.campania_id,
-                    promocion_id: c.promocion_id,
-                });
-                const saldoInicialCliente = response.data.data[0]; // Suponiendo que la API devuelve un array
-                saldoInicialValor = saldoInicialCliente ? parseFloat(saldoInicialCliente.saldo) : 0;
-                console.log(`Saldo inicial de API para ${promocionKey}:`, saldoInicialValor);
-            }
-            actualizarSaldoInicial(saldoInicialValor, selectedRows.indexOf(c)); // Mantener la actualización visual
+      if (c.campania_tipoConfig == 1) {
+        saldoInicialValor = await obtenerSaldoInicialPromocion(
+          nuevaFacturaIngreso,
+          parseInt(cliente.id),
+          c.campania_id!,
+          c.promocion_id!,
+          saldoActualPorPromocion
+        );
 
-            const total = saldoInicialValor + montoFactura;
-            console.log('total', total);
+        actualizarSaldoInicial(saldoInicialValor, selectedRows.indexOf(c));
 
-            cantidadCupones = Math.floor(total / montoMinimo) * factor * parseInt(cuponesLocal!);
-            console.log('cantidadCupones', cantidadCupones);
-            actualizarCupones(cantidadCupones, selectedRows.indexOf(c)); // Mantener la actualización visual
+        const total = saldoInicialValor + montoFactura;
+        cantidadCupones = Math.floor(total / montoMinimo) * factor * parseInt(cuponesLocal.toString());
+        actualizarCupones(cantidadCupones, selectedRows.indexOf(c));
 
-            nuevoSaldoCalculado = Number((total % montoMinimo).toFixed(2));
-            console.log('nuevoSaldo', nuevoSaldoCalculado);
-            actualizarSaldo(nuevoSaldoCalculado, selectedRows.indexOf(c)); // Mantener la actualización visual
+        nuevoSaldoCalculado = Number((total % montoMinimo).toFixed(2));
+        actualizarSaldo(nuevoSaldoCalculado, selectedRows.indexOf(c));
 
-            // Actualizar el saldo actual para la siguiente iteración o adición
-            saldoActualPorPromocion[promocionKey] = nuevoSaldoCalculado;
-        }
+        saldoActualPorPromocion[promocionKey] = nuevoSaldoCalculado;
+      }
 
-        if (c.campania_tipoConfig == 2) {
-            const total = montoFactura;
-            cantidadCupones = Math.floor(total / montoMinimo) * factor * parseInt(cuponesLocal!);
-            console.log('cantidadCupones', cantidadCupones);
-            actualizarCupones(cantidadCupones, selectedRows.indexOf(c));
-            saldoInicialValor = 0;
-            nuevoSaldoCalculado = 0;
-        }
+      if (c.campania_tipoConfig == 2) {
+        const total = montoFactura;
+        cantidadCupones = Math.floor(total / montoMinimo) * factor * parseInt(cuponesLocal.toString());
+        actualizarCupones(cantidadCupones, selectedRows.indexOf(c));
+        saldoInicialValor = 0;
+        nuevoSaldoCalculado = 0;
+      }
 
-        const nuevaFactura: Invoice = {
-            numero: facturaNum,
-            monto: monto,
-            tienda_id: localData!.id,
-            tienda_nombre: localData!.nombre,
-            formapago_id: formaPago!.id,
-            formapago_nombre: formaPago!.nombre,
-            numcupones: cantidadCupones,
+      const nuevaFactura: Invoice = {
+        numero: facturaNum,
+        monto: monto,
+        tienda_id: localData!.id,
+        tienda_nombre: localData!.nombre,
+        formapago_id: formaPago!.id,
+        formapago_nombre: formaPago!.nombre,
+        numcupones: cantidadCupones,
+      };
+
+      let campania = nuevaFacturaIngreso.campanias.find((camp) => camp.id === c.campania_id);
+      if (!campania) {
+        campania = {
+          id: c.campania_id!,
+          nombre: c.campania_nombre!,
+          tipo_configuracion: Number(c.campania_tipoConfig),
+          totalcupones: 0,
+          promociones: [],
         };
+        nuevaFacturaIngreso.campanias.push(campania);
+      }
 
-        console.log('nuevaFactura', nuevaFactura);
+      let promocion = campania.promociones.find((p) => p.id === c.promocion_id);
+      if (!promocion) {
+        promocion = {
+          id: c.promocion_id!,
+          nombre: c.promocion_nombre!,
+          montominimo: c.promocion_montominimo!.toString(),
+          nuevoSaldo: "0",
+          facturas: [],
+        };
+        campania.promociones.push(promocion);
+      }
 
-        // Buscar o crear campaña
-        let campania = nuevaFacturaIngreso.campanias.find((camp) => camp.id === c.campania_id);
-        if (!campania) {
-            campania = {
-                id: c.campania_id!,
-                nombre: c.campania_nombre!,
-                tipo_configuracion: Number(c.campania_tipoConfig),
-                totalcupones: 0,
-                promociones: [],
-            };
-            nuevaFacturaIngreso.campanias.push(campania);
-        }
-
-        // Buscar o crear promoción
-        let promocion = campania.promociones.find((p) => p.id === c.promocion_id);
-        if (!promocion) {
-            promocion = {
-                id: c.promocion_id!,
-                nombre: c.promocion_nombre!,
-                montominimo: c.promocion_montominimo!.toString(),
-                nuevoSaldo: "0", // Inicializar
-                facturas: [],
-            };
-            campania.promociones.push(promocion);
-        }
-
-        // Actualizar nuevo saldo dentro de la promoción (para la estructura de datos)
-        promocion.nuevoSaldo = nuevoSaldoCalculado.toString();
-
-        // Agregar factura
-        promocion.facturas.push(nuevaFactura);
-        campania.totalcupones += nuevaFactura.numcupones;
-
-        console.log('Factura agregada:', nuevaFactura);
+      promocion.nuevoSaldo = nuevoSaldoCalculado.toString();
+      promocion.facturas.push(nuevaFactura);
+      campania.totalcupones += nuevaFactura.numcupones;
     }
 
     setFacturasIngreso(nuevaFacturaIngreso);
-
-    // Verificar que el nuevo saldo se guardó correctamente
-    console.log('facturasIngreso actualizado:', JSON.stringify(nuevaFacturaIngreso, null, 2));
-
-    // Reset
     setFacturaNum('');
     setMonto('');
     setLocal('0');
-};
-  
-
-
-  const eliminarFactura = (index: number) => {
-    //setFacturas(facturas.filter((_, i) => i !== index));
   };
-  // Calculamos el total de montos y cupones por campaña
-  // const totalMonto = facturas.reduce((acc, f) => acc + f.monto, 0);
-  // const totalCuponesPorCampaña = CAMPAÑAS_ACTIVAS.reduce(
-  //   (acc, campaña) => {
-  //     acc[campaña.nombre] = facturas.reduce((sum, f) => sum + (f.cupones[campaña.nombre] || 0), 0);
-  //     return acc;
-  //   },
-  //   {} as { [campaña: string]: number }
-  // );
+
+
+  const eliminarFactura = (
+    campaniaId: number,
+    promocionId: number,
+    facturaIndex: number
+  ) => {
+    const nuevaFacturas = { ...facturasIngreso };
+
+    const campania = nuevaFacturas.campanias.find((c) => c.id === campaniaId);
+    if (!campania) return;
+
+    const promocion = campania.promociones.find((p) => p.id === promocionId);
+    if (!promocion) return;
+    const saldoGuardado = parseFloat(promocion.nuevoSaldo || "0");
+    const facturaEliminadaDatos = promocion.facturas[facturaIndex];
+    // Eliminar la factura
+    promocion.facturas.splice(facturaIndex, 1);
+
+    // Recalcular total de cupones
+    const totalCupones = promocion.facturas.reduce(
+      (sum, f) => sum + f.numcupones,
+      0
+    );
+    campania.totalcupones = campania.promociones.reduce(
+      (sum, p) => sum + p.facturas.reduce((s, f) => s + f.numcupones, 0),
+      0
+    );
+
+    // Recalcular nuevoSaldo si aún hay facturas
+    if (promocion.facturas.length > 0) {
+      const montominimo = parseFloat(promocion.montominimo);
+      const totalMonto = promocion.facturas.reduce(
+        (sum, f) => sum + parseFloat(f.monto),
+        0
+      );
+      const local = locales.find((l) => l.id == facturaEliminadaDatos.tienda_id);
+      const cuponPorLocal = parseInt(local!.numcupones) || 1;
+      const formaPago = formasPago.find(
+        (fp) => fp.id == facturaEliminadaDatos.formapago_id
+      );
+      const factor = formaPago?.factor || 1;
+
+      // Recalcular saldo restante (solo si la campaña es tipo 1)
+      if (campania.tipo_configuracion === 1) {
+        const saldoCalculado =
+          (facturaEliminadaDatos.numcupones / (factor * cuponPorLocal)) * montominimo + saldoGuardado - parseFloat(facturaEliminadaDatos.monto);
+
+        promocion.nuevoSaldo = saldoCalculado.toFixed(2);
+      }
+    } else {
+      // Si no hay facturas, quitar la promoción
+      campania.promociones = campania.promociones.filter(
+        (p) => p.id !== promocionId
+      );
+    }
+
+    // Si no hay promociones, quitar la campaña
+    if (campania.promociones.length === 0) {
+      nuevaFacturas.campanias = nuevaFacturas.campanias.filter(
+        (c) => c.id !== campaniaId
+      );
+    }
+
+    setFacturasIngreso(nuevaFacturas);
+  };
+
   return (
     <Box sx={{ p: 3 }}>
       <Typography variant="h4" align="center" gutterBottom>
@@ -873,11 +715,20 @@ export default function FacturaForm() {
           <TextField
             fullWidth
             label="Monto de la Factura"
-            type="number"
-            variant="outlined"
+            type="text"
+            inputMode="decimal"
             value={monto}
-            onChange={(e) => setMonto(e.target.value)}
-            size='small'
+            onChange={(e) => {
+              let valor = e.target.value;
+              valor = valor.replace(",", ".");
+
+              // Permitir solo números con un punto y máximo 2 decimales
+              if (/^\d*\.?\d{0,2}$/.test(valor) || valor === "") {
+                setMonto(valor);
+              }
+            }}
+            variant="outlined"
+            size="small"
           />
         </Grid>
         <Grid item xs={12} sm={3}>
@@ -915,7 +766,13 @@ export default function FacturaForm() {
                     <TableCell>{factura.monto}</TableCell>
                     <TableCell>{factura.numcupones}</TableCell>
                     <TableCell>
-                      <Button variant="contained" color="error" onClick={() => eliminarFactura(index)}>
+                      <Button
+                        variant="contained"
+                        color="error"
+                        onClick={() =>
+                          eliminarFactura(campania.id, promocion.id, index)
+                        }
+                      >
                         Eliminar
                       </Button>
                     </TableCell>
@@ -934,41 +791,47 @@ export default function FacturaForm() {
               <TableCell>Promoción</TableCell>
               <TableCell>Monto Mín.</TableCell>
               <TableCell>Saldo Ant.</TableCell>
-              <TableCell>Fac. Monto</TableCell>
-              {/* <TableCell>Total</TableCell> */}
-              <TableCell>campania</TableCell>
+              <TableCell># Facturas</TableCell>
+              <TableCell>Cupones</TableCell>
               <TableCell>Saldo Nue.</TableCell>
-              <TableCell>Eliminar</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {facturasIngreso?.campanias.flatMap((campania, iCampania) =>
-              campania.promociones.flatMap((promocion, iPromo) => [
-                <TableRow key={`${iCampania}-${iPromo}`}>
+            {facturasIngreso?.campanias.map((campania, iCampania) => (
+              <React.Fragment key={iCampania}>
+                <TableRow>
                   <TableCell colSpan={6} sx={{ fontWeight: 'bold', backgroundColor: '#f0f0f0' }}>
-                    {campania.nombre} - {promocion.nombre}
+                    {campania.nombre}
                   </TableCell>
-                </TableRow>,
-                ...promocion.facturas.map((factura, index) => (
+                </TableRow>
 
-                  <TableRow key={`factura-${iCampania}-${iPromo}-${index}`}>
-                    <TableCell>{promocion.nombre}</TableCell>
-                    <TableCell>{promocion.montominimo}</TableCell>
-                    <TableCell>{selectedRows.find((c) => promocion.id == c.promocion_id && campania.id && c.campania_id)?.saldo_inicial}</TableCell>
-                    <TableCell>{factura.monto}</TableCell>
-                    {/* <TableCell>{factura.monto + saldo}</TableCell> */}
-                    <TableCell>{campania.nombre}</TableCell>
-                    <TableCell>{promocion.nuevoSaldo}</TableCell>
-                    <TableCell>
-                      <Button variant="contained" color="error" onClick={() => eliminarFactura(index)}>
-                        Eliminar
-                      </Button>
-                    </TableCell>
-                  </TableRow>
+                {campania.promociones.map((promocion, iPromo) => {
 
-                )),
-              ])
-            )}
+                  const totalCuponesPromocion = promocion.facturas.reduce(
+                    (total: number, factura: any) => total + factura.numcupones,
+                    0
+                  );
+                  return (
+                    <TableRow key={`${iCampania}-${iPromo}`}>
+                      <TableCell>{promocion.nombre}</TableCell>
+                      <TableCell>{promocion.montominimo}</TableCell>
+                      <TableCell>
+                        {
+                          selectedRows.find(
+                            (c) =>
+                              promocion.id == c.promocion_id &&
+                              campania.id == c.campania_id
+                          )?.saldo_inicial
+                        }
+                      </TableCell>
+                      <TableCell>{promocion.facturas.length}</TableCell>
+                      <TableCell>{totalCuponesPromocion}</TableCell>
+                      <TableCell>{promocion.nuevoSaldo}</TableCell>
+                    </TableRow>
+                  );
+                })}
+              </React.Fragment>
+            ))}
           </TableBody>
         </Table>
       </TableContainer>
@@ -983,7 +846,7 @@ export default function FacturaForm() {
           Guardar
         </Button>
       </Box>
-      <Dialog open={openCouponDialog} onClose={() => setOpenCouponDialog(false)} maxWidth="md">
+      {/* <Dialog open={openCouponDialog} onClose={() => setOpenCouponDialog(false)} maxWidth="md">
         <DialogTitle>Cupón Generado</DialogTitle>
         <DialogContent>
           {cuponData.map((data, index) => (
@@ -1003,6 +866,92 @@ export default function FacturaForm() {
           <Button variant="contained" color="primary" onClick={handleImprimirCupon}>
             Imprimir Cupón
           </Button>
+        </DialogActions>
+      </Dialog> */}
+      <Dialog open={openCuponDialog} onClose={() => setOpenCuponDialog(false)}>
+        <DialogTitle>{cuponesPorImprimir[indiceCampania]?.campania}</DialogTitle>
+        <DialogContent>
+          <Typography variant="body1" gutterBottom>
+            Cupones a entregar: <strong>{cuponesPorImprimir[indiceCampania]?.ultimoCuponImprimir - cuponesPorImprimir[indiceCampania]?.ultimoCuponImpreso }</strong>
+          </Typography>
+          {/* <Typography variant="body2">
+            Desde el cupón <strong>{cuponesPorImprimir[indiceCampania]?.ultimoCuponImpreso + 1}</strong> hasta <strong>{cuponesPorImprimir[indiceCampania]?.ultimoCuponImprimir}</strong>
+          </Typography> */}
+        </DialogContent>
+        <DialogActions>
+        <Button
+  onClick={() => {
+    const actual = cuponesPorImprimir[indiceCampania];
+    const start = actual.ultimoCuponImpreso + 1;
+    const end = actual.ultimoCuponImprimir;
+
+    const imprimirCuponSecuencial = (i: number) => {
+      if (i > end) {
+        // Finalizado: pasa a la siguiente campaña o cierra el diálogo
+        if (indiceCampania + 1 < cuponesPorImprimir.length) {
+          setIndiceCampania(prev => prev + 1);
+        } else {
+          setOpenCuponDialog(false);
+        }
+        return;
+      }
+
+      const win = window.open('', '_blank');
+      if (!win) return;
+
+      win.document.write(`
+        <html>
+          <head><title>Cupon</title></head>
+          <body>
+            <table style="border: 2px dotted black; padding: 10px; width: 100%;">
+              <tr>
+                <td style="text-align:left;">
+                  <img src="url(/assets/fondo-scala.jpg)" style="width:50px;" />
+                </td>
+                <td style="text-align:right;">
+                  <img src="img/comercioLogo.png" style="width:125px; height:75px"/>
+                </td>
+              </tr>
+              <tr><td colspan="2" style="text-align:center"><h2>SCALA SHOPPING</h2></td></tr>
+              <tr><td><strong>NÚMERO DE CUPON:</strong></td><td>${i}</td></tr>
+              <tr><td><strong>FECHA:</strong></td><td>${new Date().toLocaleDateString()}</td></tr>
+              <tr><td><strong>CLIENTE:</strong></td><td>${cliente?.nombres} ${cliente?.apellidos}</td></tr>
+              <tr><td><strong>CI/RUC:</strong></td><td>${cliente?.ciRuc}</td></tr>
+              <tr><td><strong>TELÉFONO:</strong></td><td>${cliente?.telefono}</td></tr>
+              <tr><td><strong>CELULAR:</strong></td><td>${cliente?.celular}</td></tr>
+              <tr><td><strong>DIRECCIÓN:</strong></td><td>${cliente?.direccion}</td></tr>
+              <tr><td><strong>CAMPAÑA:</strong></td><td>${actual.campania}</td></tr>
+              <tr><td colspan="2">
+                <strong>Nota: Favor conservar sus facturas.</strong><br>
+                <span style="font-size:8pt;">
+                  “El cliente para participar en la promoción confiere voluntariamente sus datos personales...”
+                </span>
+              </td></tr>
+            </table>
+          </body>
+        </html>
+      `);
+      win.document.close();
+
+      win.onload = () => {
+        win.focus();
+        setTimeout(() => {
+          win.print();
+          win.onafterprint = () => {
+            win.close();
+            imprimirCuponSecuencial(i + 1);
+          };
+        }, 100);
+      };
+    };
+
+    imprimirCuponSecuencial(start);
+  }}
+>
+  Imprimir cupones
+</Button>
+
+
         </DialogActions>
       </Dialog>
     </Box>

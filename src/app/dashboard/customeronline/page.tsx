@@ -34,10 +34,11 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import axiosClient from '@/lib/axiosClient';
-import { CheckCircle, ClockClockwise, FastForwardCircle, FilePlus, Receipt, UserCircle, XSquare, Invoice } from '@phosphor-icons/react';
-import { UserCirclePlus } from '@phosphor-icons/react/dist/ssr';
+import {Invoice, CheckCircle } from '@phosphor-icons/react';
+import { Campaign, CampaignResponse } from '@/types/campaign';
+import { PaymentMethod, PaymentMethodResponse } from '@/types/payment_method';
+import { Store } from '@/types/comercial_store';
 
-// Asegúrate de importar el ícono
 
 const floatAnimation = keyframes`
   0% { transform: translateY(0); }
@@ -60,7 +61,7 @@ interface FacturaAprobada {
 }
 interface Factura {
   id: number;
-  fechaRegistro: string; // o Date si ya viene como objeto Date
+  fechaRegistro: string;
   numero: string;
   monto: number;
   formapago_id: number;
@@ -75,6 +76,10 @@ interface Factura {
     nombre: string;
     numcupones?: number;
   };
+  formapago?: {
+    id: number;
+    nombre: string;
+  }
 }
 
 interface AprobadasDialogProps {
@@ -91,10 +96,10 @@ interface RechazadasDialogProps {
 }
 
 interface FormData {
-  campaña: string;
+  campania: string;
   local: string;
   numeroFactura: string;
-  monto: number;
+  monto: string;
   formaPago: string;
   headerImage: File | null;
   headerPreview: string;
@@ -107,22 +112,12 @@ interface ProcessedFormData extends Omit<FormData, 'headerImage' | 'voucherImage
   voucherImage: string;
 }
 
-// Actualizar las props del diálogo
 interface FacturaDialogProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (formData: ProcessedFormData) => void; // Debe usar ProcessedFormData
+  onSubmit: (formData: ProcessedFormData) => void; 
 }
 
-const getFormaPagoNombre = (id: number): string => {
-  const formas: { [key: number]: string } = {
-    1: 'Efectivo',
-    2: 'Tarjeta Crédito',
-    3: 'Transferencia',
-    4: 'Tarjeta Débito',
-  };
-  return formas[id] || `ID ${id}`;
-};
 
 const getEstadoNombre = (estado: number): string => {
   const estados: { [key: number]: string } = {
@@ -134,10 +129,10 @@ const getEstadoNombre = (estado: number): string => {
 };
 
 const StyledButton = styled(Button)(({ theme, colorvariant }: { theme?: any; colorvariant: string }) => ({
-  width: '100%', // se adapta al contenedor del Grid
+  width: '100%', 
   minHeight: '220px',
-  maxWidth: '250px', // evita que crezca indefinidamente
-  margin: '0 auto', // centra horizontalmente
+  maxWidth: '250px',
+  margin: '0 auto',
   borderRadius: theme.shape.borderRadius * 2,
   boxShadow: theme.shadows[4],
   transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)',
@@ -145,7 +140,6 @@ const StyledButton = styled(Button)(({ theme, colorvariant }: { theme?: any; col
   flexDirection: 'column',
   alignItems: 'center',
   justifyContent: 'center',
-  //gap: theme.spacing(2),
   textAlign: 'center',
   border: '3px solid',
   borderColor:
@@ -203,11 +197,14 @@ const StyledIcon = styled('div')({
   },
 });
 const FacturaDialog = ({ open, onClose, onSubmit }: FacturaDialogProps) => {
+  const [campanias, setCampanias] = useState<Campaign[]>([]);
+  const [formasPago, setFormasPago] = useState<PaymentMethod[]>([]);
+  const [locales, setLocales] = useState<Store[]>([]);
   const [formData, setFormData] = useState<FormData>({
-    campaña: '',
+    campania: '',
     local: '',
     numeroFactura: '',
-    monto: 0.0,
+    monto: '',
     formaPago: '',
     headerImage: null,
     headerPreview: '',
@@ -215,7 +212,76 @@ const FacturaDialog = ({ open, onClose, onSubmit }: FacturaDialogProps) => {
     voucherPreview: '',
     aceptaTerminos: false,
   });
+  console.log('formData', formData)
+  useEffect(() => {
+    const fetchFormasPago = async () => {
+      try {
+        const response = await axiosClient.get<PaymentMethodResponse>(`/api/formasPago?activo=1`);
+        setFormasPago(response.data.data);
+      } catch (error) {
+        console.error('Error al cargar formas de pago:', error);
+        setFormasPago([]);
+      }
+    };
 
+    fetchFormasPago();
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (formData.headerPreview) {
+        URL.revokeObjectURL(formData.headerPreview);
+      }
+      if (formData.voucherPreview) {
+        URL.revokeObjectURL(formData.voucherPreview);
+      }
+    };
+  }, [formData.headerPreview, formData.voucherPreview]);
+  useEffect(() => {
+    if (open) {
+      if (formData.headerPreview) {
+        URL.revokeObjectURL(formData.headerPreview);
+      }
+      if (formData.voucherPreview) {
+        URL.revokeObjectURL(formData.voucherPreview);
+      }
+      setFormData({
+        campania: '',
+        local: '',
+        numeroFactura: '',
+        monto: '',
+        formaPago: '',
+        headerImage: null,
+        headerPreview: '',
+        voucherImage: null,
+        voucherPreview: '',
+        aceptaTerminos: false,
+      });
+    }
+  }, [open]);
+
+  useEffect(() => {
+    const fetchCampanias = async () => {
+      try {
+        const response = await axiosClient.get<CampaignResponse>(`/api/campanias?activo=1`);
+        const campaniasActivas: Campaign[] = response.data.data;
+        setCampanias(campaniasActivas || []);
+
+        if (campaniasActivas.length === 1) {
+          const unicaCampania = campaniasActivas[0];
+          setLocales(unicaCampania.tiendas || []);
+          setFormData((prev) => ({
+            ...prev,
+            campania: String(unicaCampania.id),
+          }));
+        }
+      } catch (error) {
+        console.error('Error al cargar campañas:', error);
+      }
+    };
+
+    fetchCampanias();
+  }, []);
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | SelectChangeEvent<string>) => {
     const target = e.target as HTMLInputElement;
     const name = target.name;
@@ -223,7 +289,6 @@ const FacturaDialog = ({ open, onClose, onSubmit }: FacturaDialogProps) => {
     if (name === 'headerImage' || name === 'voucherImage') {
       const input = target;
 
-      // Validación segura para evitar el error ts18047
       if (input.files && input.files.length > 0) {
         const file = input.files[0];
         const allowedTypes = ['image/png', 'image/jpg', 'image/jpeg'];
@@ -251,12 +316,41 @@ const FacturaDialog = ({ open, onClose, onSubmit }: FacturaDialogProps) => {
     }
   };
 
-  // const handleSubmit = () => {
-  //   onSubmit(formData);
-  //   onClose();
-  // };
-
   const handleSubmit = async () => {
+    const {
+      campania,
+      local,
+      numeroFactura,
+      monto,
+      formaPago,
+      headerImage,
+      voucherImage,
+      aceptaTerminos,
+    } = formData;
+
+    if (
+      !campania ||
+      !local ||
+      !numeroFactura ||
+      !monto ||
+      !formaPago ||
+      !headerImage ||
+      !aceptaTerminos
+    ) {
+      alert('Por favor complete todos los campos requeridos y suba la cabecera de la factura.');
+      return;
+    }
+
+    if (Number(monto) < 10) {
+      alert('El monto de la factura debe ser mayor a $10.');
+      return;
+    }
+
+    if (formaPago === '13' && !voucherImage) {
+      alert('Debe subir la imagen del voucher para la forma de pago seleccionada.');
+      return;
+    }
+
     const convertToBase64 = (file: File | null): Promise<string> => {
       if (!file) return Promise.resolve('');
       return new Promise((resolve, reject) => {
@@ -269,8 +363,8 @@ const FacturaDialog = ({ open, onClose, onSubmit }: FacturaDialogProps) => {
 
     const processedData: ProcessedFormData = {
       ...formData,
-      headerImage: await convertToBase64(formData.headerImage),
-      voucherImage: await convertToBase64(formData.voucherImage),
+      headerImage: await convertToBase64(headerImage),
+      voucherImage: await convertToBase64(voucherImage),
     };
 
     onSubmit(processedData);
@@ -285,15 +379,40 @@ const FacturaDialog = ({ open, onClose, onSubmit }: FacturaDialogProps) => {
           <Grid item xs={12} md={6}>
             <FormControl fullWidth>
               <InputLabel>Campaña</InputLabel>
-              <Select name="campaña" value={formData.campaña} onChange={handleChange} label="Campaña">
-                <MenuItem value="camp1">Campaña 1</MenuItem>
-                <MenuItem value="camp2">Campaña 2</MenuItem>
+              <Select
+                name="campania"
+                value={formData.campania}
+                onChange={(e) => {
+                  const selectedId = e.target.value;
+                  const selectedCampania = campanias.find((c) => c.id === parseInt(selectedId));
+                  setLocales(selectedCampania?.tiendas || []);
+                  setFormData((prev) => ({ ...prev, campania: selectedId, local: '' }));
+                }}
+                label="Campaña"
+                variant="outlined"
+                size="small"
+              >
+                {campanias.map((campania) => (
+                  <MenuItem key={campania.id} value={String(campania.id)}>
+                    {campania.nombre}
+                  </MenuItem>
+                ))}
               </Select>
             </FormControl>
           </Grid>
 
           <Grid item xs={12} md={6}>
-            <TextField fullWidth label="Local" name="local" value={formData.local} onChange={handleChange} />
+            <FormControl fullWidth>
+              <InputLabel>Local</InputLabel>
+              <Select name="local" value={formData.local} onChange={handleChange} label="Local" variant="outlined" size="small">
+                {locales.map((local) => (
+                  <MenuItem key={local.id} value={local.id}>
+                    {local.nombre}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
           </Grid>
 
           <Grid item xs={12} md={6}>
@@ -304,27 +423,50 @@ const FacturaDialog = ({ open, onClose, onSubmit }: FacturaDialogProps) => {
               value={formData.numeroFactura}
               onChange={handleChange}
               inputProps={{ maxLength: 6 }}
+              variant="outlined"
+              size="small"
             />
           </Grid>
 
           <Grid item xs={12} md={6}>
             <TextField
               fullWidth
-              label="Monto"
+              label="Monto de la Factura"
               name="monto"
-              type="number"
+              type="text"
+              inputMode="decimal"
               value={formData.monto}
-              onChange={handleChange}
-              InputProps={{ inputProps: { min: 0, step: 0.01 } }}
+              onChange={(e) => {
+                let valor = e.target.value.replace(',', '.');
+
+                if (/^\d*\.?\d{0,2}$/.test(valor) || valor === "") {
+                  const customEvent = {
+                    ...e,
+                    target: {
+                      ...e.target,
+                      value: valor,
+                      name: 'monto'
+                    }
+                  };
+
+                  handleChange(customEvent as React.ChangeEvent<HTMLInputElement>);
+                }
+              }}
+              variant="outlined"
+              size="small"
             />
           </Grid>
 
           <Grid item xs={12} md={6}>
             <FormControl fullWidth>
               <InputLabel>Forma de Pago</InputLabel>
-              <Select name="formaPago" value={formData.formaPago} onChange={handleChange} label="Forma de Pago">
-                <MenuItem value="tarjeta">Tarjeta de Crédito</MenuItem>
-                <MenuItem value="transferencia">Transferencia</MenuItem>
+              <Select name="formaPago" value={formData.formaPago} onChange={handleChange} label="Forma de Pago" variant="outlined"
+                size="small">
+                {formasPago.map((forma) => (
+                  <MenuItem key={forma.id} value={String(forma.id)}>
+                    {forma.nombre}
+                  </MenuItem>
+                ))}
               </Select>
             </FormControl>
           </Grid>
@@ -352,6 +494,10 @@ const FacturaDialog = ({ open, onClose, onSubmit }: FacturaDialogProps) => {
               />
             </Button>
 
+            <Typography variant="caption" sx={{ mt: 1, display: 'block' }}>
+              En la imagen se deben ver los datos del cliente.
+            </Typography>
+
             {formData.headerImage && (
               <>
                 <span>{formData.headerImage.name}</span>
@@ -364,43 +510,43 @@ const FacturaDialog = ({ open, onClose, onSubmit }: FacturaDialogProps) => {
               </>
             )}
           </Grid>
-
-          <Grid item xs={12} md={6}>
-            <Button variant="contained" component="label">
-              Subir Voucher de Pago
-              <input
-                type="file"
-                hidden
-                name="voucherImage"
-                accept="image/png, image/jpg, image/jpeg"
-                onChange={(e) => {
-                  const file = e.target.files?.[0]; // ✅ prevención de ts18047
-                  if (file && ['image/png', 'image/jpg', 'image/jpeg'].includes(file.type)) {
-                    const imageURL = URL.createObjectURL(file);
-                    setFormData((prev) => ({
-                      ...prev,
-                      voucherImage: file,
-                      voucherPreview: imageURL,
-                    }));
-                  } else if (file) {
-                    alert('Solo se permiten archivos PNG, JPG o JPEG');
-                  }
-                }}
-              />
-            </Button>
-            {formData.voucherImage && (
-              <>
-                <span>{formData.voucherImage.name}</span>
-                <br />
-                <img
-                  src={formData.voucherPreview}
-                  alt="Vista previa voucher"
-                  style={{ maxWidth: '100%', maxHeight: 150, marginTop: 10 }}
+          {formData.formaPago === '13' && (
+            <Grid item xs={12} md={6}>
+              <Button variant="contained" component="label">
+                Subir Voucher de Pago
+                <input
+                  type="file"
+                  hidden
+                  name="voucherImage"
+                  accept="image/png, image/jpg, image/jpeg"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file && ['image/png', 'image/jpg', 'image/jpeg'].includes(file.type)) {
+                      const imageURL = URL.createObjectURL(file);
+                      setFormData((prev) => ({
+                        ...prev,
+                        voucherImage: file,
+                        voucherPreview: imageURL,
+                      }));
+                    } else if (file) {
+                      alert('Solo se permiten archivos PNG, JPG o JPEG');
+                    }
+                  }}
                 />
-              </>
-            )}
-          </Grid>
-
+              </Button>
+              {formData.voucherImage && (
+                <>
+                  <span>{formData.voucherImage.name}</span>
+                  <br />
+                  <img
+                    src={formData.voucherPreview}
+                    alt="Vista previa voucher"
+                    style={{ maxWidth: '100%', maxHeight: 150, marginTop: 10 }}
+                  />
+                </>
+              )}
+            </Grid>
+          )}
           <Grid item xs={12}>
             <FormControlLabel
               control={<Checkbox name="aceptaTerminos" checked={formData.aceptaTerminos} onChange={handleChange} />}
@@ -454,7 +600,7 @@ const AprobadasDialog = ({ open, onClose }: AprobadasDialogProps) => {
       console.log(cliente_id);
 
       const response = await axiosClient.get(
-        `/api/facturas?estadoFactura=2&campania_id=1&page=${currentPage}&limit=${pageSize}&cliente_id=${cliente_id}`
+        `/api/facturas?estadoFactura=2&page=${currentPage}&limit=${pageSize}&cliente_id=${cliente_id}&campanias_activas=true`
       );
 
       const mappedData = response.data.data.map((factura: Factura) => ({
@@ -464,16 +610,16 @@ const AprobadasDialog = ({ open, onClose }: AprobadasDialogProps) => {
         local: factura.tienda?.nombre || '',
         numero_factura: factura.numero,
         monto: factura.monto,
-        forma_pago: getFormaPagoNombre(factura.formapago_id), // crea una función para traducir el ID
+        forma_pago: factura.formapago?.nombre,
         cabecera_image: factura.imagen,
         voucher_image: factura.voucher,
-        estado: getEstadoNombre(factura.estado), // opcional: mapea el estado a string legible
+        estado: getEstadoNombre(factura.estado),
         cupones: factura.tienda?.numcupones || 0,
         observacion: factura.observacion || '',
       }));
 
-      setAprobadasData(mappedData); // usamos el mapeado
-      setTotalPages(Math.ceil(response.data.total / pageSize));
+      setAprobadasData(mappedData);
+      setTotalPages(response.data.totalPaginas);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido');
     } finally {
@@ -484,7 +630,11 @@ const AprobadasDialog = ({ open, onClose }: AprobadasDialogProps) => {
   useEffect(() => {
     if (open) fetchAprobadas();
   }, [open, currentPage]);
-
+  useEffect(() => {
+    if (open) {
+      setCurrentPage(1);
+    }
+  }, [open]);
   const handlePageChange = (event: React.ChangeEvent<unknown>, page: number) => {
     setCurrentPage(page);
   };
@@ -507,7 +657,6 @@ const AprobadasDialog = ({ open, onClose }: AprobadasDialogProps) => {
               <Table>
                 <TableHead>
                   <TableRow>
-                    <TableCell>#</TableCell>
                     <TableCell>Fecha y hora de registro</TableCell>
                     <TableCell>Campaña</TableCell>
                     <TableCell>Local</TableCell>
@@ -516,15 +665,12 @@ const AprobadasDialog = ({ open, onClose }: AprobadasDialogProps) => {
                     <TableCell>Forma de pago</TableCell>
                     <TableCell>Cabecera factura</TableCell>
                     <TableCell>Voucher</TableCell>
-                    <TableCell>Estado</TableCell>
                     <TableCell>Cupones</TableCell>
-                    <TableCell>Observación</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {aprobadasData.map((factura, index) => (
                     <TableRow key={factura.id}>
-                      <TableCell>{(currentPage - 1) * pageSize + index + 1}</TableCell>
                       <TableCell>{new Date(factura.fecha_registro).toLocaleString()}</TableCell>
                       <TableCell>{factura.campania}</TableCell>
                       <TableCell>{factura.local}</TableCell>
@@ -565,9 +711,7 @@ const AprobadasDialog = ({ open, onClose }: AprobadasDialogProps) => {
                           }}
                         />
                       </TableCell>
-                      <TableCell>{factura.estado}</TableCell>
                       <TableCell>{factura.cupones}</TableCell>
-                      <TableCell>{factura.observacion}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -617,7 +761,7 @@ const PendienteDialog = ({ open, onClose }: PendienteDialogProps) => {
       console.log(cliente_id);
 
       const response = await axiosClient.get(
-        `/api/facturas?estadoFactura=1&campania_id=1&page=${currentPage}&limit=${pageSize}&cliente_id=${cliente_id}`
+        `/api/facturas?estadoFactura=1&page=${currentPage}&limit=${pageSize}&cliente_id=${cliente_id}&campanias_activas=true`
       );
 
       const mappedData = response.data.data.map((factura: Factura) => ({
@@ -627,16 +771,16 @@ const PendienteDialog = ({ open, onClose }: PendienteDialogProps) => {
         local: factura.tienda?.nombre || '',
         numero_factura: factura.numero,
         monto: factura.monto,
-        forma_pago: getFormaPagoNombre(factura.formapago_id), // crea una función para traducir el ID
+        forma_pago: factura.formapago?.nombre,
         cabecera_image: factura.imagen,
         voucher_image: factura.voucher,
-        estado: getEstadoNombre(factura.estado), // opcional: mapea el estado a string legible
+        estado: getEstadoNombre(factura.estado),
         cupones: factura.tienda?.numcupones || 0,
         observacion: factura.observacion || '',
       }));
 
-      setPendientesData(mappedData); // usamos el mapeado
-      setTotalPages(Math.ceil(response.data.data.total / pageSize));
+      setPendientesData(mappedData);
+      setTotalPages(response.data.totalPaginas);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido');
     } finally {
@@ -648,6 +792,11 @@ const PendienteDialog = ({ open, onClose }: PendienteDialogProps) => {
     if (open) fetchPendientes();
   }, [open, currentPage]);
 
+  useEffect(() => {
+    if (open) {
+      setCurrentPage(1);
+    }
+  }, [open]);
   const handlePageChange = (event: React.ChangeEvent<unknown>, page: number) => {
     setCurrentPage(page);
   };
@@ -670,7 +819,6 @@ const PendienteDialog = ({ open, onClose }: PendienteDialogProps) => {
               <Table>
                 <TableHead>
                   <TableRow>
-                    <TableCell>#</TableCell>
                     <TableCell>Fecha y hora de registro</TableCell>
                     <TableCell>Campaña</TableCell>
                     <TableCell>Local</TableCell>
@@ -679,15 +827,11 @@ const PendienteDialog = ({ open, onClose }: PendienteDialogProps) => {
                     <TableCell>Forma de pago</TableCell>
                     <TableCell>Cabecera factura</TableCell>
                     <TableCell>Voucher</TableCell>
-                    <TableCell>Estado</TableCell>
-                    <TableCell>Cupones</TableCell>
-                    <TableCell>Observación</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {pendientesData.map((factura, index) => (
                     <TableRow key={factura.id}>
-                      <TableCell>{(currentPage - 1) * pageSize + index + 1}</TableCell>
                       <TableCell>{new Date(factura.fecha_registro).toLocaleString()}</TableCell>
                       <TableCell>{factura.campania}</TableCell>
                       <TableCell>{factura.local}</TableCell>
@@ -728,9 +872,6 @@ const PendienteDialog = ({ open, onClose }: PendienteDialogProps) => {
                           }}
                         />
                       </TableCell>
-                      <TableCell>{factura.estado}</TableCell>
-                      <TableCell>{factura.cupones}</TableCell>
-                      <TableCell>{factura.observacion}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -780,7 +921,7 @@ const RechazadasDialog = ({ open, onClose }: RechazadasDialogProps) => {
       console.log(cliente_id);
 
       const response = await axiosClient.get(
-        `/api/facturas?estadoFactura=4&campania_id=1&page=${currentPage}&limit=${pageSize}&cliente_id=${cliente_id}`);
+        `/api/facturas?estadoFactura=3&page=${currentPage}&limit=${pageSize}&cliente_id=${cliente_id}&campanias_activas=true`);
 
       const mappedData = response.data.data.map((factura: Factura) => ({
         id: factura.id,
@@ -789,16 +930,16 @@ const RechazadasDialog = ({ open, onClose }: RechazadasDialogProps) => {
         local: factura.tienda?.nombre || '',
         numero_factura: factura.numero,
         monto: factura.monto,
-        forma_pago: getFormaPagoNombre(factura.formapago_id), // crea una función para traducir el ID
+        forma_pago: factura.formapago?.nombre,
         cabecera_image: factura.imagen,
         voucher_image: factura.voucher,
-        estado: getEstadoNombre(factura.estado), // opcional: mapea el estado a string legible
+        estado: getEstadoNombre(factura.estado),
         cupones: factura.tienda?.numcupones || 0,
         observacion: factura.observacion || '',
       }));
 
-      setRechazadasData(mappedData); // usamos el mapeado
-      setTotalPages(Math.ceil(response.data.total / pageSize));
+      setRechazadasData(mappedData);
+      setTotalPages(response.data.totalPaginas);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido');
     } finally {
@@ -809,7 +950,11 @@ const RechazadasDialog = ({ open, onClose }: RechazadasDialogProps) => {
   useEffect(() => {
     if (open) fetchRechazadas();
   }, [open, currentPage]);
-
+  useEffect(() => {
+    if (open) {
+      setCurrentPage(1);
+    }
+  }, [open]);
   const handlePageChange = (event: React.ChangeEvent<unknown>, page: number) => {
     setCurrentPage(page);
   };
@@ -832,7 +977,6 @@ const RechazadasDialog = ({ open, onClose }: RechazadasDialogProps) => {
               <Table>
                 <TableHead>
                   <TableRow>
-                    <TableCell>#</TableCell>
                     <TableCell>Fecha y hora de registro</TableCell>
                     <TableCell>Campaña</TableCell>
                     <TableCell>Local</TableCell>
@@ -841,15 +985,12 @@ const RechazadasDialog = ({ open, onClose }: RechazadasDialogProps) => {
                     <TableCell>Forma de pago</TableCell>
                     <TableCell>Cabecera factura</TableCell>
                     <TableCell>Voucher</TableCell>
-                    <TableCell>Estado</TableCell>
-                    <TableCell>Cupones</TableCell>
                     <TableCell>Observación</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {rechazadasData.map((factura, index) => (
                     <TableRow key={factura.id}>
-                      <TableCell>{(currentPage - 1) * pageSize + index + 1}</TableCell>
                       <TableCell>{new Date(factura.fecha_registro).toLocaleString()}</TableCell>
                       <TableCell>{factura.campania}</TableCell>
                       <TableCell>{factura.local}</TableCell>
@@ -890,8 +1031,6 @@ const RechazadasDialog = ({ open, onClose }: RechazadasDialogProps) => {
                           }}
                         />
                       </TableCell>
-                      <TableCell>{factura.estado}</TableCell>
-                      <TableCell>{factura.cupones}</TableCell>
                       <TableCell>{factura.observacion}</TableCell>
                     </TableRow>
                   ))}
@@ -921,6 +1060,8 @@ const BotonesFactura = () => {
   const [aprobadasOpen, setAprobadasOpen] = useState(false);
   const [pendientesOpen, setPendientesOpen] = useState(false);
   const [rechazadasOpen, setRechazadasOpen] = useState(false);
+  const [successDialogOpen, setSuccessDialogOpen] = useState(false);
+
   const handleSubmitFactura = async (formData: ProcessedFormData) => {
     try {
       const token = localStorage.getItem('custom-auth-token');
@@ -934,35 +1075,36 @@ const BotonesFactura = () => {
       const cliente_id = user.id;
       const ruc = user.ruc;
 
-      const campañasSeleccionadas = [
+      const campaniasSeleccionadas = [
         {
-          id: 1,
+          id: formData.campania,
           factura: {
             numero: formData.numeroFactura,
             monto: formData.monto,
             tienda_id: parseInt(formData.local),
-            formapago_id: formData.formaPago === 'tarjeta' ? 4 : 3,
+            formapago_id: formData.formaPago,
             imagen: formData.headerImage,
             voucher: formData.voucherImage,
           },
         },
       ];
 
-      const payload = {
-        facturasCliente: {
-          cliente_id: cliente_id,
-          ruc: ruc,
-          campanias: campañasSeleccionadas,
-        },
-      };
+      const facturasCliente = {
+        cliente_id: cliente_id,
+        ruc: ruc,
+        campanias: campaniasSeleccionadas,
+      }
 
       const response = await axiosClient.post(`/api/facturas/facturasWeb`, {
-        payload
+        facturasCliente
       });
 
       const result = await response.data;
       console.log('Respuesta del backend:', result);
-      alert('Factura registrada correctamente.');
+      setDialogOpen(false);
+      console.log('Factura registrada correctamente.')
+      setSuccessDialogOpen(true);
+
     } catch (error) {
       console.error('Error al registrar factura:', error);
     }
@@ -1093,6 +1235,33 @@ const BotonesFactura = () => {
       <AprobadasDialog open={aprobadasOpen} onClose={() => setAprobadasOpen(false)} />
       <PendienteDialog open={pendientesOpen} onClose={() => setPendientesOpen(false)} />
       <RechazadasDialog open={rechazadasOpen} onClose={() => setRechazadasOpen(false)} />
+      <Dialog open={successDialogOpen} onClose={() => setSuccessDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <CheckCircle color="success" size={38} />
+          Factura Registrada
+        </DialogTitle>
+        <DialogContent dividers>
+          <Box sx={{ textAlign: 'center', p: 2 }}>
+            <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
+              ¡Su factura ha sido ingresada correctamente!
+            </Typography>
+            <Typography variant="body1" gutterBottom>
+              Será revisada por el personal de Servicio al Cliente.
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Para verificar si fue <strong>aprobada</strong>, <strong>rechazada</strong> o continúa <strong>pendiente</strong>,
+              por favor consulte los módulos correspondientes en esta sección.
+            </Typography>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSuccessDialogOpen(false)} variant="contained" color="primary">
+            Entendido
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+
     </Box>
   );
 };
