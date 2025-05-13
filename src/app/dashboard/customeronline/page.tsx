@@ -22,6 +22,7 @@ import {
   styled,
   TextField,
   Typography,
+  DialogContentText,
   useTheme,
 } from '@mui/material';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -34,7 +35,7 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import axiosClient from '@/lib/axiosClient';
-import {Invoice, CheckCircle } from '@phosphor-icons/react';
+import {Invoice, CheckCircle, Warning } from '@phosphor-icons/react';
 import { Campaign, CampaignResponse } from '@/types/campaign';
 import { PaymentMethod, PaymentMethodResponse } from '@/types/payment_method';
 import { Store } from '@/types/comercial_store';
@@ -58,6 +59,42 @@ interface FacturaAprobada {
   estado: string;
   cupones: number;
   observacion: string;
+}
+// Componente de diálogo reutilizable
+function ResponseDialog({ open, onClose, success, title, message }: {
+  open: boolean;
+  onClose: () => void;
+  success: boolean;
+  title: string;
+  message: string;
+}) {
+  return (
+    <Dialog open={open} onClose={onClose}>
+      <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        {success ? (
+          <CheckCircle size={24} color="#4CAF50" weight="fill" />
+        ) : (
+          <Warning size={24} color="#FF5252" weight="fill" />
+        )}
+        {title}
+      </DialogTitle>
+      <DialogContent>
+        <DialogContentText sx={{ color: success ? 'text.primary' : 'error.main' }}>
+          {message}
+        </DialogContentText>
+      </DialogContent>
+      <DialogActions>
+        <Button 
+          onClick={onClose} 
+          color={success ? 'primary' : 'secondary'}
+          variant="contained"
+          sx={{ textTransform: 'none' }}
+        >
+          Aceptar
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
 }
 interface Factura {
   id: number;
@@ -1104,9 +1141,10 @@ const BotonesFactura = () => {
       setDialogOpen(false);
       console.log('Factura registrada correctamente.')
       setSuccessDialogOpen(true);
-
+      setDialogOpen(true);
     } catch (error) {
       console.error('Error al registrar factura:', error);
+      setDialogOpen(true);
     }
   };
   return (
