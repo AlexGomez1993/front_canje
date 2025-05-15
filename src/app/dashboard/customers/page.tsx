@@ -25,13 +25,10 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import { SelectChangeEvent } from '@mui/material/Select';
 import { NewClientDialog } from '@/components/dashboard/customer/newClientDialog';
-import Coupon from '../coupon/page';
 import axiosClient from '@/lib/axiosClient';
 import { PaymentMethod, PaymentMethodResponse } from '@/types/payment_method';
 import { Campaign, CampaignPromotions, CampaignResponse } from '@/types/campaign';
-import { Promotion } from '@/types/promotion';
 import { CustomerInvoice, Invoice } from '@/types/invoice';
 import { PlusCircle, TipJar, Trash } from '@phosphor-icons/react';
 import { Store } from '@/types/comercial_store';
@@ -92,6 +89,8 @@ export default function FacturaForm() {
   const [cuponesPorImprimir, setCuponesPorImprimir] = useState<any[]>([]);
   const [indiceCampania, setIndiceCampania] = useState(0);
   const [openCuponDialog, setOpenCuponDialog] = useState(false);
+  const [estadoImpresion, setEstadoImpresion] = useState<'listo' | 'imprimiendo' | 'transicion' | 'finalizado'>('listo');
+  const [cuentaRegresiva, setCuentaRegresiva] = useState(5);
   const [cliente, setCliente] = React.useState<Cliente>({
     id: '',
     nombres: '',
@@ -525,9 +524,109 @@ export default function FacturaForm() {
     setFacturasIngreso(nuevaFacturas);
   };
 
+  const imprimirCupones = () => {
+    const imprimirSecuencial = async (i: number) => {
+      const campaniaActual = cuponesPorImprimir[indiceCampania]; // accede dinámicamente
+  
+      if (!campaniaActual) return;
+  
+      const start = campaniaActual.ultimoCuponImpreso + 1;
+      const end = campaniaActual.ultimoCuponImprimir;
+      const campaniaSelect = campanias.find((c) => c.nombre === campaniaActual.campania);
+      const logo = campaniaSelect?.logo;
+  
+      if (i > end) {
+        // Fin de campaña actual
+        setEstadoImpresion('transicion');
+        setCuentaRegresiva(5);
+  
+        const countdown = setInterval(() => {
+          setCuentaRegresiva((prev) => {
+            if (prev === 1) {
+              clearInterval(countdown);
+              if (indiceCampania + 1 < cuponesPorImprimir.length) {
+                setIndiceCampania(indiceCampania + 1);
+                setEstadoImpresion('listo');
+              } else {
+                setEstadoImpresion('finalizado');
+              }
+            }
+            return prev - 1;
+          });
+        }, 1000);
+  
+        return;
+      }
+  
+      const win = window.open('');
+      if (!win) return;
+  
+      win.document.write(`<!DOCTYPE html>
+        <html>
+          <head>
+            <title>Cupon</title>
+            <style>
+              body { font-family: Arial, sans-serif; font-size: 7pt; }
+              table { border-collapse: collapse; width: 100%; border: 2px dotted black; padding: 2px; }
+              td { padding: 2px 4px; vertical-align: top; }
+              .titulo-scala { font-size: 10pt; font-weight: bold; text-align: center; margin: 0; }
+              .texto-justificado { display: block; text-align: justify; }
+            </style>
+          </head>
+          <body>
+            <table>
+              <tr>
+                <td style="text-align:left;">
+                  <img src="/assets/bnScala.png" style="width:50px;" />
+                </td>
+                <td style="text-align:right;">
+                  <img src="${process.env.NEXT_PUBLIC_API_URL! + logo}" style="width:125px; height:75px" />
+                </td>
+              </tr>
+              <tr><td colspan="2"><p class="titulo-scala">SCALA SHOPPING</p></td></tr>
+              <tr><td><strong>NÚMERO DE CUPON:</strong></td><td>${i}</td></tr>
+              <tr><td><strong>FECHA Y HORA:</strong></td><td>${new Date().toLocaleString()}</td></tr>
+              <tr><td><strong>CLIENTE:</strong></td><td>${cliente?.nombres} ${cliente?.apellidos}</td></tr>
+              <tr><td><strong>CI/RUC:</strong></td><td>${cliente?.ciRuc}</td></tr>
+              <tr><td><strong>TELÉFONO:</strong></td><td>${cliente?.telefono}</td></tr>
+              <tr><td><strong>CELULAR:</strong></td><td>${cliente?.celular}</td></tr>
+              <tr><td><strong>DIRECCIÓN:</strong></td><td>${cliente?.direccion}</td></tr>
+              <tr><td><strong>CAMPAÑA:</strong></td><td>${campaniaActual.campania}</td></tr>
+              <tr>
+                <td colspan="2">
+                  <strong>Nota: Favor conservar sus facturas.</strong><br>
+                  <span class="texto-justificado">
+                    “El cliente para participar en la promoción confiere voluntariamente sus datos personales, y autoriza a que
+                    los mismos sean recopilados y utilizados para las campañas del Centro Comercial, tratados de conformidad con
+                    la Ley Orgánica de Protección de Datos Personales. Estos no serán transferidos a terceros. Si el cliente no
+                    desea constar en la base de datos del centro comercial, puede solicitar su eliminación al correo
+                    info-scala@smo.ec.”
+                  </span>
+                </td>
+              </tr>
+            </table>
+          </body>
+        </html>`);
+  
+      win.document.close();
+  
+      win.onload = () => {
+        win.focus();
+        setTimeout(() => {
+          win.print();
+          win.close();
+          imprimirSecuencial(i + 1);
+        }, 100);
+      };
+    };
+  
+    const currentStart = cuponesPorImprimir[indiceCampania]?.ultimoCuponImpreso + 1 || 1;
+    imprimirSecuencial(currentStart);
+  };
+  
   return (
     <Box sx={{ p: 3 }}>
-       <Typography
+      <Typography
         variant="h5"
         sx={{
           fontWeight: 'bold',
@@ -858,112 +957,48 @@ export default function FacturaForm() {
           Guardar
         </Button>
       </Box>
-      {/* <Dialog open={openCouponDialog} onClose={() => setOpenCouponDialog(false)} maxWidth="md">
-        <DialogTitle>Cupón Generado</DialogTitle>
-        <DialogContent>
-          {cuponData.map((data, index) => (
-            <Coupon
-              key={index}
-              logo={data.logo}
-              numCupon={data.numCupon}
-              hoy={data.hoy}
-              cliente={data.cliente}
-              campania={data.campania}
-              cupones={data.cupones}
-            />
-          ))}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenCouponDialog(false)}>Cerrar</Button>
-          <Button variant="contained" color="primary" onClick={handleImprimirCupon}>
-            Imprimir Cupón
-          </Button>
-        </DialogActions>
-      </Dialog> */}
       <Dialog open={openCuponDialog} onClose={() => setOpenCuponDialog(false)}>
         <DialogTitle>{cuponesPorImprimir[indiceCampania]?.campania}</DialogTitle>
         <DialogContent>
           <Typography variant="body1" gutterBottom>
-            Cupones a entregar: <strong>{cuponesPorImprimir[indiceCampania]?.ultimoCuponImprimir - cuponesPorImprimir[indiceCampania]?.ultimoCuponImpreso }</strong>
+            Cupones a entregar: <strong>{cuponesPorImprimir[indiceCampania]?.ultimoCuponImprimir - cuponesPorImprimir[indiceCampania]?.ultimoCuponImpreso}</strong>
           </Typography>
-          {/* <Typography variant="body2">
-            Desde el cupón <strong>{cuponesPorImprimir[indiceCampania]?.ultimoCuponImpreso + 1}</strong> hasta <strong>{cuponesPorImprimir[indiceCampania]?.ultimoCuponImprimir}</strong>
-          </Typography> */}
         </DialogContent>
         <DialogActions>
-        <Button
-  onClick={() => {
-    const actual = cuponesPorImprimir[indiceCampania];
-    const start = actual.ultimoCuponImpreso + 1;
-    const end = actual.ultimoCuponImprimir;
+          {estadoImpresion === 'listo' && (
+            <Button
+              onClick={() => {
+                setEstadoImpresion('imprimiendo');
+                imprimirCupones(); // ya no recibe argumento
+              }}
+            >
+              Imprimir cupones
+            </Button>
+          )}
 
-    const imprimirCuponSecuencial = (i: number) => {
-      if (i > end) {
-        // Finalizado: pasa a la siguiente campaña o cierra el diálogo
-        if (indiceCampania + 1 < cuponesPorImprimir.length) {
-          setIndiceCampania(prev => prev + 1);
-        } else {
-          setOpenCuponDialog(false);
-        }
-        return;
-      }
+          {estadoImpresion === 'transicion' && (
+            <Typography variant="body2" sx={{ m: 2 }}>
+              Imprimiendo campaña <strong>{cuponesPorImprimir[indiceCampania]?.campania}</strong>...
+              Esperando próxima en {cuentaRegresiva} segundos
+            </Typography>
+          )}
 
-      const win = window.open('', '_blank');
-      if (!win) return;
-
-      win.document.write(`
-        <html>
-          <head><title>Cupon</title></head>
-          <body>
-            <table style="border: 2px dotted black; padding: 10px; width: 100%;">
-              <tr>
-                <td style="text-align:left;">
-                  <img src="url(/assets/fondo-scala.jpg)" style="width:50px;" />
-                </td>
-                <td style="text-align:right;">
-                  <img src="img/comercioLogo.png" style="width:125px; height:75px"/>
-                </td>
-              </tr>
-              <tr><td colspan="2" style="text-align:center"><h2>SCALA SHOPPING</h2></td></tr>
-              <tr><td><strong>NÚMERO DE CUPON:</strong></td><td>${i}</td></tr>
-              <tr><td><strong>FECHA:</strong></td><td>${new Date().toLocaleDateString()}</td></tr>
-              <tr><td><strong>CLIENTE:</strong></td><td>${cliente?.nombres} ${cliente?.apellidos}</td></tr>
-              <tr><td><strong>CI/RUC:</strong></td><td>${cliente?.ciRuc}</td></tr>
-              <tr><td><strong>TELÉFONO:</strong></td><td>${cliente?.telefono}</td></tr>
-              <tr><td><strong>CELULAR:</strong></td><td>${cliente?.celular}</td></tr>
-              <tr><td><strong>DIRECCIÓN:</strong></td><td>${cliente?.direccion}</td></tr>
-              <tr><td><strong>CAMPAÑA:</strong></td><td>${actual.campania}</td></tr>
-              <tr><td colspan="2">
-                <strong>Nota: Favor conservar sus facturas.</strong><br>
-                <span style="font-size:8pt;">
-                  “El cliente para participar en la promoción confiere voluntariamente sus datos personales...”
-                </span>
-              </td></tr>
-            </table>
-          </body>
-        </html>
-      `);
-      win.document.close();
-
-      win.onload = () => {
-        win.focus();
-        setTimeout(() => {
-          win.print();
-          win.onafterprint = () => {
-            win.close();
-            imprimirCuponSecuencial(i + 1);
-          };
-        }, 100);
-      };
-    };
-
-    imprimirCuponSecuencial(start);
-  }}
->
-  Imprimir cupones
-</Button>
-
-
+          {estadoImpresion === 'finalizado' && (
+            <>
+              <Typography variant="body2" sx={{ m: 2 }}>
+                ✅ Se imprimieron todas las campañas correctamente.
+              </Typography>
+              <Button
+                onClick={() => {
+                  window.location.reload();
+                }}
+                variant="contained"
+                color="primary"
+              >
+                Aceptar
+              </Button>
+            </>
+          )}
         </DialogActions>
       </Dialog>
     </Box>

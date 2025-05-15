@@ -53,6 +53,7 @@ type Campania = {
   promociones: Promocion[];
   configuracion: any;
   tiendas: Store[]
+  logo?: string
 };
 
 type Promocion = {
@@ -100,10 +101,14 @@ const FacturasTable = () => {
   const [filterRuc, setFilterRuc] = useState<string>('');
   const [totalPage, setTotalPage] = useState(1);
   const [totalFacturas, setTotalFacturas] = useState(0);
-  const [cuponesAImprimir, setcuponesAImprimir] = useState(0)
+  const [cuponesPorImprimir, setCuponesPorImprimir] = useState<any[]>([]);
+  const [indiceCampania, setIndiceCampania] = useState(0);
+  const [openCuponDialog, setOpenCuponDialog] = useState(false);
+  const [estadoImpresion, setEstadoImpresion] = useState<'listo' | 'imprimiendo' | 'transicion' | 'finalizado'>('listo');
+  const [cuentaRegresiva, setCuentaRegresiva] = useState(5);
 
   const eliminarFactura = (index: number) => {
-    setFacturas(facturas.filter((_, i) => i !== index));
+    setFacturasAgregadas(facturasAgregadas.filter((_, i) => i !== index));
   };
 
   const fetchFacturas = async () => {
@@ -132,18 +137,10 @@ const FacturasTable = () => {
 
   useEffect(() => {
     const fetchFormasPago = async () => {
-      const token = localStorage.getItem('custom-auth-token');
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/formasPago`, {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        const data = await response.json();
-        // Filtrar solo las activas
-        const formasActivas = data.data.filter((fp: any) => fp.activo);
-        setFormasPago(formasActivas);
+        const response = await axiosClient.get(`/api/formasPago?activo=1`);
+        // Filtrar solo las activa
+        setFormasPago(response.data.data ||[]);
       } catch (error) {
         console.error('Error al cargar formas de pago:', error);
         setFormasPago([]);
@@ -154,60 +151,51 @@ const FacturasTable = () => {
   }, []);
   useEffect(() => {
     const fetchCampanias = async () => {
-      const token = localStorage.getItem('custom-auth-token');
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/campanias?activo=1`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        const data = await response.json();
-        setCampanias(data.data || []);
+        const response = await axiosClient.get(`/api/campanias?activo=1`);
+        setCampanias(response.data.data || []);
       } catch (error) {
         console.error('Error al cargar campañas:', error);
+        setCampanias([]);
       }
     };
 
     fetchCampanias();
   }, []);
   const handleProcesarFactura = async () => {
-    if (!facturaSeleccionada || !selectedPromocion || !selectedCampania || saldo === null) return;
-
-    const formaPago = formasPago.find((fp) => fp.id === formaPagoId);
-    const factor = formaPago?.factor || 1;
-    const montoFactura = Number(facturaSeleccionada.monto);
-    const saldoAnterior = Number(saldo);
-    const montoMinimo = selectedPromocion.montominimo;
-    const total = (saldoAnterior + montoFactura);
-    const numcupones = Math.floor(total / montoMinimo) * factor;
-    const nuevoSaldo = total % montoMinimo;
+    if (!facturasAgregadas || facturasAgregadas.length<1 || !selectedPromocion || !selectedCampania || saldo === null) return;
 
     try {
       const response = await axiosClient.put(`/api/facturas/procesarFacturaWeb`, {
-        factura_id: facturaSeleccionada.id,
+        factura_id: facturasAgregadas[0].id,
         promocion: {
           id: selectedPromocion.id,
-          montominimo: montoMinimo,
-          nuevoSaldo: nuevoSaldo,
+          montominimo: facturasAgregadas[0].montoMinimo,
+          nuevoSaldo: facturasAgregadas[0].nuevoSaldo,
         },
         usuario_id: user?.id,
-        numcupones: numcupones,
+        numcupones: facturasAgregadas[0].cupones,
         campania: {
-          id: selectedCampania.id,
-          nombre: selectedCampania.nombre,
-          tipo_configuracion: selectedCampania.configuracion.descripcion,
+          id: facturasAgregadas[0].campania.id,
+          nombre: facturasAgregadas[0].campania.nombre,
+          tipo_configuracion: facturasAgregadas[0].campania.configuracion.descripcion,
         },
       });
+
+      const { cuponesImprimir } = response.data;
+
+        if (cuponesImprimir?.length) {
+          setCuponesPorImprimir(cuponesImprimir);
+          setIndiceCampania(0);
+          setOpenCuponDialog(true);
+        }
+
       setSnackbarType('success');
       setSnackbarMsg('Factura procesada con éxito');
-      setOpenFacturaDialog(false);
-      //handleImprimirCupon(cuponesAImprimir);
+      handleFacturaClose();
       setSelectedPromocion(null);
       setSelectedCampania(null);
       setSaldo(null)
-      fetchFacturas();
     } catch (error) {
       console.error('Error en la solicitud:', error);
       setSnackbarType('error');
@@ -284,49 +272,33 @@ const FacturasTable = () => {
       };
     }
   };
+  console.log('facturas', facturas
+  )
   const handleAgregarFactura = () => {
     if (!saldo || !facturaSeleccionada || !selectedPromocion || !selectedCampania) return;
-    const formaPago = formasPago.find((fp) => fp.id === facturaSeleccionada.formaPago_id);
-    const factor = formaPago?.factor || 1;
+    const factor = facturaSeleccionada.formapago.factor;
+    const numCuponesLocal = facturaSeleccionada.tienda.numcupones;
     const montoFactura = Number(facturaSeleccionada.monto);
     const saldoNumerico = Number(saldo);
     const montoMinimo = Number(selectedPromocion.montominimo);
     const total = saldoNumerico + montoFactura;
-    const cantidadCupones = Math.floor(total / montoMinimo) * factor;
-    const nuevoSaldo = total % montoMinimo;
-    if (cantidadCupones > 0) {
-      const hoy = new Date().toLocaleDateString('es-ES');
-      const cuponData = Array.from({ length: cantidadCupones }, (_, index) => ({
-        numCupon: `${facturaSeleccionada.id}-${index + 1}`,
-        hoy,
-        cliente: facturaSeleccionada.cliente,
-        promocion: selectedPromocion.nombre,
-        montoMinimo: montoMinimo,
-        saldoAnterior: saldoNumerico,
-        campania: selectedCampania.nombre,
-        factor: factor, // Mostrar factor en el cupón
-        montoConFactor: montoFactura,
-        cupones: cantidadCupones,
-        total: total,
-        nuevoSaldo: nuevoSaldo,
-        logo: '/logo-scala.png',
-        nota: `Favor conservar sus facturas.<br>
-          “El cliente para participar en la promoción confiere voluntariamente sus datos personales..."`,
-      }));
-
-      //handleImprimirCupon(cuponData);
+    const cantidadCupones = Math.floor(total / montoMinimo) * factor * numCuponesLocal;
+    let nuevoSaldo = total % montoMinimo;
+    if(cantidadCupones==0){
+      nuevoSaldo = total;
     }
+    
     // Agregar al estado de facturas agregadas
-    console.log('facturasAgregadas', facturasAgregadas)
     setFacturasAgregadas((prev) => [
       ...prev,
       {
-        local: facturaSeleccionada?.local?.nombre || 'N/A',
-        pago: formaPago?.nombre,
+        id: facturaSeleccionada.id,
+        local: facturaSeleccionada.tienda,
+        pago: facturaSeleccionada.formapago,
         promocion: selectedPromocion.nombre,
         factura: facturaSeleccionada.numero,
         monto: facturaSeleccionada.monto,
-        campania: selectedCampania.nombre,
+        campania: selectedCampania,
         montoMinimo: montoMinimo,
         saldoAnterior: saldoNumerico,
         montoConFactor: montoFactura,
@@ -356,7 +328,7 @@ const FacturasTable = () => {
     setSelectedPromocion(promocionSeleccionada || null);
 
     if (promocionSeleccionada) {
-      calcularSaldo();
+      calcularSaldo(promocionSeleccionada.id);
     }
   };
   const handleRowsPerPageChange = (event: SelectChangeEvent<number>) => {
@@ -405,13 +377,117 @@ const FacturasTable = () => {
     setSnackbarOpen(false);
   };
 
+  const handleFacturaClose = () =>{
+    setOpenFacturaDialog(false)
+    setFacturasAgregadas([]);
+
+  }
   const handleAprobarClick = (factura: any) => {
     setFacturaSeleccionada(factura);
     handleCampania(factura.campania_id);
     setOpenFacturaDialog(true);
   };
 
-  const calcularSaldo = async () => {
+  const imprimirCupones = () => {
+    const imprimirSecuencial = async (i: number) => {
+      const campaniaActual = cuponesPorImprimir[indiceCampania];
+  
+      if (!campaniaActual) return;
+  
+      const start = campaniaActual.ultimoCuponImpreso + 1;
+      const end = campaniaActual.ultimoCuponImprimir;
+      const campaniaSelect = campanias.find((c) => c.nombre === campaniaActual.campania);
+      const logo = campaniaSelect?.logo;
+  
+      if (i > end) {
+        // Fin de campaña actual
+        setEstadoImpresion('transicion');
+        setCuentaRegresiva(5);
+  
+        const countdown = setInterval(() => {
+          setCuentaRegresiva((prev) => {
+            if (prev === 1) {
+              clearInterval(countdown);
+              if (indiceCampania + 1 < cuponesPorImprimir.length) {
+                setIndiceCampania(indiceCampania + 1);
+                setEstadoImpresion('listo');
+              } else {
+                setEstadoImpresion('finalizado');
+              }
+            }
+            return prev - 1;
+          });
+        }, 1000);
+  
+        return;
+      }
+  
+      const win = window.open('');
+      if (!win) return;
+  
+      win.document.write(`<!DOCTYPE html>
+        <html>
+          <head>
+            <title>Cupon</title>
+            <style>
+              body { font-family: Arial, sans-serif; font-size: 7pt; }
+              table { border-collapse: collapse; width: 100%; border: 2px dotted black; padding: 2px; }
+              td { padding: 2px 4px; vertical-align: top; }
+              .titulo-scala { font-size: 10pt; font-weight: bold; text-align: center; margin: 0; }
+              .texto-justificado { display: block; text-align: justify; }
+            </style>
+          </head>
+          <body>
+            <table>
+              <tr>
+                <td style="text-align:left;">
+                  <img src="/assets/bnScala.png" style="width:50px;" />
+                </td>
+                <td style="text-align:right;">
+                  <img src="${process.env.NEXT_PUBLIC_API_URL! + logo}" style="width:125px; height:75px" />
+                </td>
+              </tr>
+              <tr><td colspan="2"><p class="titulo-scala">SCALA SHOPPING</p></td></tr>
+              <tr><td><strong>NÚMERO DE CUPON:</strong></td><td>${i}</td></tr>
+              <tr><td><strong>FECHA Y HORA:</strong></td><td>${new Date().toLocaleString()}</td></tr>
+              <tr><td><strong>CLIENTE:</strong></td><td>${facturaSeleccionada.cliente?.nombres} ${facturaSeleccionada.cliente?.apellidos}</td></tr>
+              <tr><td><strong>CI/RUC:</strong></td><td>${facturaSeleccionada.cliente?.ciRuc}</td></tr>
+              <tr><td><strong>TELÉFONO:</strong></td><td>${facturaSeleccionada.cliente?.telefono}</td></tr>
+              <tr><td><strong>CELULAR:</strong></td><td>${facturaSeleccionada.cliente?.celular}</td></tr>
+              <tr><td><strong>DIRECCIÓN:</strong></td><td>${facturaSeleccionada.cliente?.direccion}</td></tr>
+              <tr><td><strong>CAMPAÑA:</strong></td><td>${campaniaActual.campania}</td></tr>
+              <tr>
+                <td colspan="2">
+                  <strong>Nota: Favor conservar sus facturas.</strong><br>
+                  <span class="texto-justificado">
+                    “El cliente para participar en la promoción confiere voluntariamente sus datos personales, y autoriza a que
+                    los mismos sean recopilados y utilizados para las campañas del Centro Comercial, tratados de conformidad con
+                    la Ley Orgánica de Protección de Datos Personales. Estos no serán transferidos a terceros. Si el cliente no
+                    desea constar en la base de datos del centro comercial, puede solicitar su eliminación al correo
+                    info-scala@smo.ec.”
+                  </span>
+                </td>
+              </tr>
+            </table>
+          </body>
+        </html>`);
+  
+      win.document.close();
+  
+      win.onload = () => {
+        win.focus();
+        setTimeout(() => {
+          win.print();
+          win.close();
+          imprimirSecuencial(i + 1);
+        }, 100);
+      };
+    };
+  
+    const currentStart = cuponesPorImprimir[indiceCampania]?.ultimoCuponImpreso + 1 || 1;
+    imprimirSecuencial(currentStart);
+  };
+  const calcularSaldo = async (promocionSeleccionadaId: number) => {
     if (!facturaSeleccionada?.cliente?.id) return;
     setLoadingSaldo(true);
 
@@ -421,7 +497,7 @@ const FacturasTable = () => {
       });
       const saldosCliente = response.data.data;
       if (saldosCliente && saldosCliente.length > 0) {
-        const saldoCamPromo = saldosCliente.find((s: any) => s.campania_id == selectedCampania!.id && s.promocion_id == selectedPromocion!.id)
+        const saldoCamPromo = saldosCliente.find((s: any) => s.campania_id == selectedCampania!.id && s.promocion_id == promocionSeleccionadaId)
         if (saldoCamPromo) {
           setSaldo(saldoCamPromo.saldo);
         }
@@ -500,7 +576,7 @@ const FacturasTable = () => {
                   <TableCell>{factura.tienda ? factura.tienda.nombre : '-'}</TableCell>
                   <TableCell>{factura.numero}</TableCell>
                   <TableCell align="right">${parseFloat(factura.monto).toFixed(2)}</TableCell>
-                  <TableCell>{factura.formapago_id}</TableCell>
+                  <TableCell>{factura.formapago.nombre}</TableCell>
 
                   <TableCell>
                     <Avatar
@@ -581,12 +657,12 @@ const FacturasTable = () => {
           <img src={selectedImage} alt="Vista ampliada" style={{ maxWidth: '100%', maxHeight: '80vh' }} />
         </DialogContent>
       </Dialog>
-      <Dialog open={openFacturaDialog} onClose={() => setOpenFacturaDialog(false)} maxWidth="md" fullWidth>
+      <Dialog open={openFacturaDialog} onClose={handleFacturaClose} maxWidth="md" fullWidth>
         <DialogTitle>Información de la Factura</DialogTitle>
         <DialogContent>
           {facturaSeleccionada && (
             <Grid container spacing={2} sx={{ mt: 1 }}>
-              <Grid item xs={12} sm={3}>
+              <Grid item xs={12} sm={4}>
                 <TextField
                   fullWidth
                   label="RUC"
@@ -595,7 +671,7 @@ const FacturasTable = () => {
                   disabled
                 />
               </Grid>
-              <Grid item xs={12} sm={3}>
+              <Grid item xs={12} sm={4}>
                 <TextField
                   fullWidth
                   label="Nombre"
@@ -605,7 +681,7 @@ const FacturasTable = () => {
                 />
               </Grid>
 
-              <Grid item xs={12} sm={3}>
+              <Grid item xs={12} sm={4}>
                 <TextField
                   fullWidth
                   label="Apellido"
@@ -632,26 +708,6 @@ const FacturasTable = () => {
                   label="Dirección"
                   variant="outlined"
                   value={facturaSeleccionada.cliente?.direccion || ''}
-                  disabled
-                />
-              </Grid>
-
-              <Grid item xs={12} sm={3}>
-                <TextField
-                  fullWidth
-                  label="Teléfono"
-                  variant="outlined"
-                  value={facturaSeleccionada.cliente?.telefono || ''}
-                  disabled
-                />
-              </Grid>
-
-              <Grid item xs={12} sm={3}>
-                <TextField
-                  fullWidth
-                  label="Celular"
-                  variant="outlined"
-                  value={facturaSeleccionada.cliente?.celular || ''}
                   disabled
                 />
               </Grid>
@@ -696,7 +752,7 @@ const FacturasTable = () => {
               </Grid>
 
               {selectedPromocion && (
-                <Grid item xs={12} sm={6}>
+                <Grid item xs={12} sm={3}>
                   <TextField
                     fullWidth
                     label="Monto Mínimo"
@@ -713,22 +769,6 @@ const FacturasTable = () => {
                   label="Local"
                   variant="outlined"
                   value={facturaSeleccionada.tienda?.nombre || ''}
-                  disabled
-                />
-              </Grid>
-
-              <Grid item xs={12} sm={3}>
-                <Button variant="outlined" onClick={calcularSaldo} fullWidth disabled={loadingSaldo}>
-                  {loadingSaldo ? 'Calculando...' : 'Calcular Saldo'}
-                </Button>
-              </Grid>
-
-              <Grid item xs={12} sm={3}>
-                <TextField
-                  fullWidth
-                  label="Saldo"
-                  variant="outlined"
-                  value={saldo ? `$${Number(saldo).toFixed(2)}` : ''}
                   disabled
                 />
               </Grid>
@@ -787,11 +827,11 @@ const FacturasTable = () => {
               <TableBody>
                 {facturasAgregadas.map((factura, index) => (
                   <TableRow key={index}>
-                    <TableCell>{facturaSeleccionada.tienda ? facturaSeleccionada.tienda.nombre : '-'}</TableCell>
-                    <TableCell>{factura.pago}</TableCell>
+                    <TableCell>{factura.local.nombre}</TableCell>
+                    <TableCell>{factura.pago.nombre}</TableCell>
                     <TableCell>{factura.factura}</TableCell>
                     <TableCell>{parseFloat(factura.monto).toFixed(2)}</TableCell>
-                    <TableCell>{factura.campania}</TableCell>
+                    <TableCell>{factura.campania.nombre}</TableCell>
                     <TableCell>
                       <Button variant="contained" color="error" onClick={() => eliminarFactura(index)}>
                         Eliminar
@@ -819,15 +859,15 @@ const FacturasTable = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {facturasAgregadas.map((factura) => (
-                  <TableRow key={factura.id}>
+                {facturasAgregadas.map((factura,index) => (
+                  <TableRow key={index}>
                     <TableCell>{factura.promocion}</TableCell>
                     <TableCell>${factura.montoMinimo}</TableCell>
                     <TableCell>${factura.saldoAnterior}</TableCell>
                     <TableCell>${factura.montoConFactor}</TableCell>
                     <TableCell>{factura.cupones}</TableCell>
                     <TableCell>${parseFloat(factura.total).toFixed(2)}</TableCell>
-                    <TableCell>{factura.campania}</TableCell>
+                    <TableCell>{factura.campania.nombre}</TableCell>
                     <TableCell>${parseFloat(factura.nuevoSaldo).toFixed(2)}</TableCell>
                   </TableRow>
                 ))}
@@ -836,7 +876,7 @@ const FacturasTable = () => {
           </TableContainer>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenFacturaDialog(false)}>Cerrar</Button>
+          <Button onClick={handleFacturaClose}>Cerrar</Button>
           <Button variant="contained" color="success" onClick={handleProcesarFactura} disabled={processing}>
             {processing ? 'Procesando...' : 'Procesar Factura Online'}
           </Button>
@@ -861,6 +901,50 @@ const FacturasTable = () => {
           <Button onClick={handleConfirmarRechazo} color="error" variant="contained">
             Confirmar Rechazo
           </Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog open={openCuponDialog} onClose={() => setOpenCuponDialog(false)}>
+        <DialogTitle>{cuponesPorImprimir[indiceCampania]?.campania}</DialogTitle>
+        <DialogContent>
+          <Typography variant="body1" gutterBottom>
+            Cupones a entregar: <strong>{cuponesPorImprimir[indiceCampania]?.ultimoCuponImprimir - cuponesPorImprimir[indiceCampania]?.ultimoCuponImpreso}</strong>
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          {estadoImpresion === 'listo' && (
+            <Button
+              onClick={() => {
+                setEstadoImpresion('imprimiendo');
+                imprimirCupones(); // ya no recibe argumento
+              }}
+            >
+              Imprimir cupones
+            </Button>
+          )}
+
+          {estadoImpresion === 'transicion' && (
+            <Typography variant="body2" sx={{ m: 2 }}>
+              Imprimiendo campaña <strong>{cuponesPorImprimir[indiceCampania]?.campania}</strong>...
+              Esperando próxima en {cuentaRegresiva} segundos
+            </Typography>
+          )}
+
+          {estadoImpresion === 'finalizado' && (
+            <>
+              <Typography variant="body2" sx={{ m: 2 }}>
+                ✅ Se imprimieron todas las campañas correctamente.
+              </Typography>
+              <Button
+                onClick={() => {
+                  window.location.reload(); // Recarga la página
+                }}
+                variant="contained"
+                color="primary"
+              >
+                Aceptar
+              </Button>
+            </>
+          )}
         </DialogActions>
       </Dialog>
       <Snackbar open={snackbarOpen} autoHideDuration={2000} onClose={handleSnackbarClose}>

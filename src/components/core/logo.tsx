@@ -41,6 +41,7 @@ export function Logo({
       sx={{
         alignItems: 'center',
         justifyContent: 'center',
+        width: '30%'
       }}
       onError={(e) => {
         // Fallback para errores de carga

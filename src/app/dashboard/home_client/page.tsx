@@ -51,7 +51,7 @@ const HomeClientPage = () => {
 
   const carouselSettings = {
     dots: true,
-    infinite: campaigns.length > 1, // Deshabilita la repetición infinita si solo hay una campaña
+    infinite: campaigns.length > 1,
     speed: 500,
     slidesToShow: 1,
     slidesToScroll: 1,
