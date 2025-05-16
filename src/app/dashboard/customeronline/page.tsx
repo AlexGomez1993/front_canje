@@ -35,7 +35,7 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import axiosClient from '@/lib/axiosClient';
-import {Invoice, CheckCircle, Warning } from '@phosphor-icons/react';
+import { Invoice, CheckCircle, Warning } from '@phosphor-icons/react';
 import { Campaign, CampaignResponse } from '@/types/campaign';
 import { PaymentMethod, PaymentMethodResponse } from '@/types/payment_method';
 import { Store } from '@/types/comercial_store';
@@ -60,42 +60,7 @@ interface FacturaAprobada {
   cupones: number;
   observacion: string;
 }
-// Componente de diálogo reutilizable
-function ResponseDialog({ open, onClose, success, title, message }: {
-  open: boolean;
-  onClose: () => void;
-  success: boolean;
-  title: string;
-  message: string;
-}) {
-  return (
-    <Dialog open={open} onClose={onClose}>
-      <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-        {success ? (
-          <CheckCircle size={24} color="#4CAF50" weight="fill" />
-        ) : (
-          <Warning size={24} color="#FF5252" weight="fill" />
-        )}
-        {title}
-      </DialogTitle>
-      <DialogContent>
-        <DialogContentText sx={{ color: success ? 'text.primary' : 'error.main' }}>
-          {message}
-        </DialogContentText>
-      </DialogContent>
-      <DialogActions>
-        <Button 
-          onClick={onClose} 
-          color={success ? 'primary' : 'secondary'}
-          variant="contained"
-          sx={{ textTransform: 'none' }}
-        >
-          Aceptar
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
-}
+
 interface Factura {
   id: number;
   fechaRegistro: string;
@@ -117,7 +82,7 @@ interface Factura {
     id: number;
     nombre: string;
   };
-  cupones?:{
+  cupones?: {
     numcupones: number
   }[]
 }
@@ -155,7 +120,7 @@ interface ProcessedFormData extends Omit<FormData, 'headerImage' | 'voucherImage
 interface FacturaDialogProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (formData: ProcessedFormData) => void; 
+  onSubmit: (formData: ProcessedFormData) => void;
 }
 
 
@@ -169,7 +134,7 @@ const getEstadoNombre = (estado: number): string => {
 };
 
 const StyledButton = styled(Button)(({ theme, colorvariant }: { theme?: any; colorvariant: string }) => ({
-  width: '100%', 
+  width: '100%',
   minHeight: '220px',
   maxWidth: '250px',
   margin: '0 auto',
@@ -277,34 +242,12 @@ const FacturaDialog = ({ open, onClose, onSubmit }: FacturaDialogProps) => {
       }
     };
   }, [formData.headerPreview, formData.voucherPreview]);
-  useEffect(() => {
-    if (open) {
-      if (formData.headerPreview) {
-        URL.revokeObjectURL(formData.headerPreview);
-      }
-      if (formData.voucherPreview) {
-        URL.revokeObjectURL(formData.voucherPreview);
-      }
-      setFormData({
-        campania: '',
-        local: '',
-        numeroFactura: '',
-        monto: '',
-        formaPago: '',
-        headerImage: null,
-        headerPreview: '',
-        voucherImage: null,
-        voucherPreview: '',
-        aceptaTerminos: false,
-      });
-    }
-  }, [open]);
 
   useEffect(() => {
     const fetchCampanias = async () => {
       try {
         const response = await axiosClient.get<CampaignResponse>(`/api/campanias?activo=1`);
-        const campaniasActivas: Campaign[] = response.data.data;
+        const campaniasActivas = response.data.data;
         setCampanias(campaniasActivas || []);
 
         if (campaniasActivas.length === 1) {
@@ -320,8 +263,31 @@ const FacturaDialog = ({ open, onClose, onSubmit }: FacturaDialogProps) => {
       }
     };
 
-    fetchCampanias();
-  }, []);
+    if (open) {
+      if (formData.headerPreview) URL.revokeObjectURL(formData.headerPreview);
+      if (formData.voucherPreview) URL.revokeObjectURL(formData.voucherPreview);
+
+      // Resetear formData
+      setFormData({
+        campania: '',
+        local: '',
+        numeroFactura: '',
+        monto: '',
+        formaPago: '',
+        headerImage: null,
+        headerPreview: '',
+        voucherImage: null,
+        voucherPreview: '',
+        aceptaTerminos: false,
+      });
+
+
+      fetchCampanias();
+    }
+  }, [open]);
+
+
+
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | SelectChangeEvent<string>) => {
     const target = e.target as HTMLInputElement;
     const name = target.name;
@@ -652,7 +618,7 @@ const AprobadasDialog = ({ open, onClose }: AprobadasDialogProps) => {
         cabecera_image: factura.imagen,
         voucher_image: factura.voucher,
         estado: getEstadoNombre(factura.estado),
-        cupones: factura.cupones?factura.cupones[0].numcupones : 0,
+        cupones: factura.cupones ? factura.cupones[0].numcupones : 0,
         observacion: factura.observacion || '',
       }));
 
@@ -1100,6 +1066,10 @@ const BotonesFactura = () => {
   const [rechazadasOpen, setRechazadasOpen] = useState(false);
   const [successDialogOpen, setSuccessDialogOpen] = useState(false);
 
+  const handleSuccessOnClose = () => {
+    setDialogOpen(false);
+    setSuccessDialogOpen(false);
+  }
   const handleSubmitFactura = async (formData: ProcessedFormData) => {
     try {
       const token = localStorage.getItem('custom-auth-token');
@@ -1186,7 +1156,7 @@ const BotonesFactura = () => {
         spacing={4}
         sx={{
           maxWidth: 1200,
-          margin: 'auto',
+          /* margin: 'auto', */
           justifyContent: 'center',
           textAlign: 'center',
         }}
@@ -1274,7 +1244,7 @@ const BotonesFactura = () => {
       <AprobadasDialog open={aprobadasOpen} onClose={() => setAprobadasOpen(false)} />
       <PendienteDialog open={pendientesOpen} onClose={() => setPendientesOpen(false)} />
       <RechazadasDialog open={rechazadasOpen} onClose={() => setRechazadasOpen(false)} />
-      <Dialog open={successDialogOpen} onClose={() => setSuccessDialogOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog open={successDialogOpen} onClose={handleSuccessOnClose} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <CheckCircle color="success" size={38} />
           Factura Registrada
@@ -1294,13 +1264,11 @@ const BotonesFactura = () => {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setSuccessDialogOpen(false)} variant="contained" color="primary">
+          <Button onClick={handleSuccessOnClose} variant="contained" color="primary">
             Entendido
           </Button>
         </DialogActions>
       </Dialog>
-
-
     </Box>
   );
 };
