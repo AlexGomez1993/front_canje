@@ -76,8 +76,6 @@ export const NewClientDialog = ({ openDialog, setOpenDialog, cliente, setCliente
 
         ]);
 
-        console.log('Provincias:', provRes.data);
-        console.log('Ciudades:', ciudadRes.data);
         setProvincias(provRes.data);
         setCiudades(ciudadRes.data);
       } catch (err) {

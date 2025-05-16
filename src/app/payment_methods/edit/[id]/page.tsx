@@ -46,7 +46,7 @@ const PromotionEditPage = ({ params }: { params: { id: string } }) => {
       try {
         const response = await axiosClient.get(`/api/formasPago/${id}`);
         const data = response.data.formaPago;
-        console.log('Datos de la forma de pago:', data);
+
         setPaymentMethodData(data);
         setValue('nombre', data.nombre);
         setValue('descripcion', data.descripcion);

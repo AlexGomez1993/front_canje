@@ -334,6 +334,23 @@ export function ResetPasswordForm(): React.JSX.Element {
             }}>
               {isCodeSent ? 'Cambiar contraseña' : 'Enviar código'}
             </Button>
+            <Button
+              variant="outlined"
+              color="error"
+              sx={{
+                color: 'white',
+                borderColor: 'white',
+                fontWeight: 'bold',
+                '&:hover': {
+                  borderColor: 'white',
+                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                },
+                mt: 2,
+              }}
+              onClick={() => router.push('/auth/sign-in-client')}
+            >
+              Cancelar
+            </Button>
           </Stack>
         </form>
       </Stack>

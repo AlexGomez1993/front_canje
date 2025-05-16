@@ -36,6 +36,7 @@ import { Invoice } from '@phosphor-icons/react';
 import { useUser } from '@/hooks/use-user';
 import { Store } from '@/types/comercial_store';
 import axios from 'axios';
+import moment from 'moment';
 
 interface Factura {
   id: number;
@@ -272,8 +273,6 @@ const FacturasTable = () => {
       };
     }
   };
-  console.log('facturas', facturas
-  )
   const handleAgregarFactura = () => {
     if (!saldo || !facturaSeleccionada || !selectedPromocion || !selectedCampania) return;
     const factor = facturaSeleccionada.formapago.factor;
@@ -571,7 +570,7 @@ const FacturasTable = () => {
               facturas.map((factura, idx) => (
                 <TableRow key={factura.id} hover sx={{ '&:last-child td': { border: 0 } }}>
                   <TableCell>{idx + 1}</TableCell>
-                  <TableCell>{new Date(factura.createdAt).toLocaleString()}</TableCell>
+                  <TableCell> {moment(factura.fechaRegistro).add(5, 'hours').format('DD/MM/YYYY HH:mm:ss')}</TableCell>
                   <TableCell>{factura.ruc}</TableCell>
                   <TableCell>{factura.tienda ? factura.tienda.nombre : '-'}</TableCell>
                   <TableCell>{factura.numero}</TableCell>

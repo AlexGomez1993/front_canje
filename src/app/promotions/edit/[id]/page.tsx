@@ -54,7 +54,7 @@ const PromotionEditPage = ({ params }: { params: { id: string } }) => {
       try {
         const response = await axiosClient.get(`/api/promociones/${id}`);
         const data = response.data.promocion;
-        console.log('Datos de la promoción:', data);
+
         setPromotionData(data);
         setValue('nombre', data.nombre);
         setValue('descripcion', data.descripcion);

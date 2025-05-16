@@ -217,7 +217,7 @@ const FacturaDialog = ({ open, onClose, onSubmit }: FacturaDialogProps) => {
     voucherPreview: '',
     aceptaTerminos: false,
   });
-  console.log('formData', formData)
+
   useEffect(() => {
     const fetchFormasPago = async () => {
       try {
@@ -601,7 +601,6 @@ const AprobadasDialog = ({ open, onClose }: AprobadasDialogProps) => {
 
       const user = JSON.parse(userString);
       const cliente_id = user.id;
-      console.log(cliente_id);
 
       const response = await axiosClient.get(
         `/api/facturas?estadoFactura=2&page=${currentPage}&limit=${pageSize}&cliente_id=${cliente_id}&campanias_activas=true`
@@ -762,7 +761,6 @@ const PendienteDialog = ({ open, onClose }: PendienteDialogProps) => {
       const user = JSON.parse(userString);
       const cliente_id = user.id;
       const cedula = user.ruc;
-      console.log(cliente_id);
 
       const response = await axiosClient.get(
         `/api/facturas?estadoFactura=1&page=${currentPage}&limit=${pageSize}&cliente_id=${cliente_id}&campanias_activas=true`
@@ -922,7 +920,6 @@ const RechazadasDialog = ({ open, onClose }: RechazadasDialogProps) => {
       const user = JSON.parse(userString);
       const cliente_id = user.id;
       const cedula = user.ruc;
-      console.log(cliente_id);
 
       const response = await axiosClient.get(
         `/api/facturas?estadoFactura=3&page=${currentPage}&limit=${pageSize}&cliente_id=${cliente_id}&campanias_activas=true`);

@@ -16,6 +16,8 @@ import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import { BookOpenText } from "@phosphor-icons/react/dist/ssr";
 import { useUser } from "@/hooks/use-user";
+import NewsCarousel from "@/components/dashboard/integrations/news-carrusel";
+import { Box, Grid } from "@mui/material";
 
 // Configura el worker usando la versión de react-pdf
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
@@ -116,32 +118,45 @@ export default function ReglamentoPage(): React.JSX.Element {
           {error}
         </Typography>
       )}
-      {memoizedPdfFile && (
-        <Card sx={{ p: 2, textAlign: "center", width: '50%' }}>
-          <Document
-            file={memoizedPdfFile}
-            onLoadSuccess={({ numPages }: { numPages: number }) => setNumPages(numPages)}
 
-          >
-            {numPages > 0 ? (
-              <Slider {...sliderSettings}>
-                {Array.from({ length: numPages }, (_, index) => (
-                  <div key={index} style={{ padding: '0 10px' }}>
-                    <PdfPage
-                      pageNumber={index + 1}
-                      width={600}
-                      renderAnnotationLayer={false}
-                      renderTextLayer={false}
-                    />
-                  </div>
-                ))}
-              </Slider>
-            ) : (
-              <Typography>Cargando páginas...</Typography>
-            )}
-          </Document>
-        </Card>
-      )}
+      <Grid container spacing={10}>
+        {memoizedPdfFile && (
+          <Grid item xs={12} md={6.5}>
+            <Card sx={{ p: 2, textAlign: "center", height: "100%" }}>
+              <Document
+                file={memoizedPdfFile}
+                onLoadSuccess={({ numPages }: { numPages: number }) => setNumPages(numPages)}
+              >
+                {numPages > 0 ? (
+                  <Slider {...sliderSettings}>
+                    {Array.from({ length: numPages }, (_, index) => (
+                      <div key={index} style={{ padding: "0 10px" }}>
+                        <PdfPage
+                          pageNumber={index + 1}
+                          width={600}
+                          renderAnnotationLayer={false}
+                          renderTextLayer={false}
+                        />
+                      </div>
+                    ))}
+                  </Slider>
+                ) : (
+                  <Typography>Cargando páginas...</Typography>
+                )}
+              </Document>
+            </Card>
+          </Grid>
+        )}
+
+        <Grid item xs={12} md={4} sx={{ height: "100%" }}>
+          <Card sx={{ p: 2, textAlign: "center", height: "100%" }}>
+          <NewsCarousel vertical={true} />
+          </Card>
+          
+        </Grid>
+      </Grid>
+
+
     </Stack>
   );
 }

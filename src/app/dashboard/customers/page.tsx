@@ -289,7 +289,7 @@ export default function FacturaForm() {
       setOpenDialog(true);
     }
   };
-  console.log('selectedRows', selectedRows)
+  
   const actualizarSaldoInicial = (saldoinicial: number, index: number) => {
     const row = selectedRows[index];
     const newRows = [...selectedRows];
@@ -442,12 +442,14 @@ export default function FacturaForm() {
           nombre: c.promocion_nombre!,
           montominimo: c.promocion_montominimo!.toString(),
           nuevoSaldo: "0",
+          saldoInicial: "0",
           facturas: [],
         };
         campania.promociones.push(promocion);
       }
 
       promocion.nuevoSaldo = nuevoSaldoCalculado.toString();
+      promocion.saldoInicial = saldoInicialValor.toString();
       promocion.facturas.push(nuevaFactura);
       campania.totalcupones += nuevaFactura.numcupones;
     }
@@ -506,6 +508,9 @@ export default function FacturaForm() {
           (facturaEliminadaDatos.numcupones / (factor * cuponPorLocal)) * montominimo + saldoGuardado - parseFloat(facturaEliminadaDatos.monto);
 
         promocion.nuevoSaldo = saldoCalculado.toFixed(2);
+        const saldoAntiguo = promocion.saldoInicial;
+        const nuevoSaldoAntiguo = parseFloat(saldoAntiguo) - (parseFloat(facturaEliminadaDatos.monto) % montominimo)
+        promocion.saldoInicial = nuevoSaldoAntiguo.toFixed(2);
       }
     } else {
       // Si no hay facturas, quitar la promoción
@@ -874,7 +879,7 @@ export default function FacturaForm() {
                     <TableCell>{factura.tienda_nombre}</TableCell>
                     <TableCell>{factura.formapago_nombre}</TableCell>
                     <TableCell>{factura.numero}</TableCell>
-                    <TableCell>{factura.monto}</TableCell>
+                    <TableCell>$ {parseFloat(factura.monto).toFixed(2)}</TableCell>
                     <TableCell>{factura.numcupones}</TableCell>
                     <TableCell>
                       <Button
@@ -925,19 +930,11 @@ export default function FacturaForm() {
                   return (
                     <TableRow key={`${iCampania}-${iPromo}`}>
                       <TableCell>{promocion.nombre}</TableCell>
-                      <TableCell>{promocion.montominimo}</TableCell>
-                      <TableCell>
-                        {
-                          selectedRows.find(
-                            (c) =>
-                              promocion.id == c.promocion_id &&
-                              campania.id == c.campania_id
-                          )?.saldo_inicial
-                        }
-                      </TableCell>
+                      <TableCell>$ {parseFloat(promocion.montominimo).toFixed(2)}</TableCell>
+                      <TableCell>$ {parseFloat(promocion.saldoInicial).toFixed(2)}</TableCell>
                       <TableCell>{promocion.facturas.length}</TableCell>
                       <TableCell>{totalCuponesPromocion}</TableCell>
-                      <TableCell>{promocion.nuevoSaldo}</TableCell>
+                      <TableCell>$ {parseFloat(promocion.nuevoSaldo).toFixed(2)}</TableCell>
                     </TableRow>
                   );
                 })}

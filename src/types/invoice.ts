@@ -13,6 +13,7 @@ export interface PromotionInvoice {
     nombre: string;
     montominimo: string;
     nuevoSaldo: string;
+    saldoInicial: string;
     facturas: Invoice[];
 }
 
