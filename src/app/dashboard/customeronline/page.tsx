@@ -116,7 +116,10 @@ interface Factura {
   formapago?: {
     id: number;
     nombre: string;
-  }
+  };
+  cupones?:{
+    numcupones: number
+  }[]
 }
 
 interface AprobadasDialogProps {
@@ -626,14 +629,12 @@ const AprobadasDialog = ({ open, onClose }: AprobadasDialogProps) => {
   const fetchAprobadas = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('custom-auth-token');
       const userString = localStorage.getItem('user');
 
       if (!userString) throw new Error('Usuario no autenticado');
 
       const user = JSON.parse(userString);
       const cliente_id = user.id;
-      const cedula = user.ruc;
       console.log(cliente_id);
 
       const response = await axiosClient.get(
@@ -651,7 +652,7 @@ const AprobadasDialog = ({ open, onClose }: AprobadasDialogProps) => {
         cabecera_image: factura.imagen,
         voucher_image: factura.voucher,
         estado: getEstadoNombre(factura.estado),
-        cupones: factura.tienda?.numcupones || 0,
+        cupones: factura.cupones?factura.cupones[0].numcupones : 0,
         observacion: factura.observacion || '',
       }));
 

@@ -76,7 +76,7 @@ const HomeClientPage = () => {
                         objectFit: 'cover',
                       }}
                       src={
-                        `${process.env.NEXT_PUBLIC_API_URL}/${campaign.banner}` ||
+                        `${process.env.NEXT_PUBLIC_API_URL}/banners/${campaign.banner}` ||
                         'https://via.placeholder.com/800x400?text=Banner+No+Disponible'
                       }
                       alt={`Banner de la campaña ${campaignIndex + 1}`}

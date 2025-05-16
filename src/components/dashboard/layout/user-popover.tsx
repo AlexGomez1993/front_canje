@@ -79,12 +79,12 @@ export function UserPopover({ anchorEl, onClose, open }: UserPopoverProps): Reac
           </ListItemIcon>
           Settings
         </MenuItem> */}
-        <MenuItem component={RouterLink} href={paths.dashboard.account} onClick={onClose}>
+        {user?.rol_id!= 1 && user?.rol_id!=3&&(<MenuItem component={RouterLink} href={paths.dashboard.account} onClick={onClose}>
           <ListItemIcon>
             <UserIcon fontSize="var(--icon-fontSize-md)" />
           </ListItemIcon>
           Perfil
-        </MenuItem>
+        </MenuItem>)}
         <MenuItem onClick={handleSignOut}>
           <ListItemIcon>
             <SignOutIcon fontSize="var(--icon-fontSize-md)" />

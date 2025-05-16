@@ -15,11 +15,13 @@ import { CompaniesFilters } from "@/components/dashboard/integrations/integratio
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import { BookOpenText } from "@phosphor-icons/react/dist/ssr";
+import { useUser } from "@/hooks/use-user";
 
 // Configura el worker usando la versión de react-pdf
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
 
 export default function ReglamentoPage(): React.JSX.Element {
+  const { user } = useUser();
   const [pdfData, setPdfData] = useState<Uint8Array | null>(() => {
     if (typeof window !== 'undefined') {
       const savedPdf = localStorage.getItem('reglamento');
@@ -30,7 +32,7 @@ export default function ReglamentoPage(): React.JSX.Element {
   const [numPages, setNumPages] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
 
-  const handleFileUpload = useCallback(async(event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -89,22 +91,24 @@ export default function ReglamentoPage(): React.JSX.Element {
             Reglamento
           </Typography>
         </Stack>
-        <div>
-          <Button
-            component="label"
-            startIcon={<PlusIcon fontSize="var(--icon-fontSize-md)" />}
-            variant="contained"
-          >
-            Cargar Reglamento
-            <input
-              type="file"
-              accept="application/pdf"
-              hidden
-              onChange={handleFileUpload}
-              aria-label="Cargar archivo PDF"
-            />
-          </Button>
-        </div>
+        {user?.rol_id === 1 && (
+          <div>
+            <Button
+              component="label"
+              startIcon={<PlusIcon fontSize="var(--icon-fontSize-md)" />}
+              variant="contained"
+            >
+              Cargar Reglamento
+              <input
+                type="file"
+                accept="application/pdf"
+                hidden
+                onChange={handleFileUpload}
+                aria-label="Cargar archivo PDF"
+              />
+            </Button>
+          </div>
+        )}
       </Stack>
       <CompaniesFilters />
       {error && (
@@ -113,18 +117,18 @@ export default function ReglamentoPage(): React.JSX.Element {
         </Typography>
       )}
       {memoizedPdfFile && (
-        <Card sx={{ p: 2, textAlign: "center" }}>
+        <Card sx={{ p: 2, textAlign: "center", width: '50%' }}>
           <Document
             file={memoizedPdfFile}
             onLoadSuccess={({ numPages }: { numPages: number }) => setNumPages(numPages)}
-            
+
           >
             {numPages > 0 ? (
               <Slider {...sliderSettings}>
                 {Array.from({ length: numPages }, (_, index) => (
                   <div key={index} style={{ padding: '0 10px' }}>
-                    <PdfPage 
-                      pageNumber={index + 1} 
+                    <PdfPage
+                      pageNumber={index + 1}
                       width={600}
                       renderAnnotationLayer={false}
                       renderTextLayer={false}

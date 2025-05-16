@@ -35,4 +35,9 @@ export const paths = {
     create: '/payment_methods/create',
     edit: '/payment_methods/edit/:id',
   },
+  clients: {
+    list: '/clients/list',
+    create: '/clients/create',
+    edit: '/clients/edit/:id',
+  },
 } as const;

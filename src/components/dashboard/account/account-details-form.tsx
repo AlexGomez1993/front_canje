@@ -39,6 +39,8 @@ export function AccountDetailsForm(): React.JSX.Element {
   const [apellidos, setApellidos] = React.useState(user?.apellidos || '');
   const [email, setEmail] = React.useState(user?.email || '');
   const [celular, setCelular] = React.useState(user?.celular || '');
+  const [telefono, setTelefono] = React.useState(user?.telefono || '');
+  const [direccion, setDireccion] = React.useState(user?.direccion || '');
 
   const handleSaveDetails = async () => {
     if (!user?.id) return;
@@ -48,6 +50,8 @@ export function AccountDetailsForm(): React.JSX.Element {
       apellidos,
       email,
       celular,
+      telefono,
+      direccion
     };
 
     try {
@@ -168,6 +172,29 @@ export function AccountDetailsForm(): React.JSX.Element {
                     label="Número Celular"
                     name="phone"
                     type="tel"
+                  />
+                </FormControl>
+              </Grid>
+              <Grid md={6} xs={12}>
+                <FormControl fullWidth>
+                  <InputLabel shrink>Teléfono Fijo</InputLabel>
+                  <OutlinedInput
+                    value={telefono}
+                    onChange={(e) => setTelefono(e.target.value)}
+                    label="Teléfono Fijo"
+                    name="telefono"
+                    type="tel"
+                  />
+                </FormControl>
+              </Grid>
+              <Grid md={6} xs={12}>
+                <FormControl fullWidth>
+                  <InputLabel shrink>Dirección</InputLabel>
+                  <OutlinedInput
+                    value={direccion}
+                    onChange={(e) => setDireccion(e.target.value)}
+                    label="Dirección"
+                    name="direccion"
                   />
                 </FormControl>
               </Grid>
