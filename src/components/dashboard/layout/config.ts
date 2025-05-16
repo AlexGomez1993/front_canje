@@ -15,8 +15,10 @@ export const navItemsUserTI = [
   { key: 'promotions', title: 'Promociones', href: paths.promotions.list, icon: 'ticket' },
   { key: 'comercial_stores', title: 'Locales Comerciales', href: paths.comercial_stores.list, icon: 'store' },
   { key: 'payment_methods', title: 'Formas de Pago', href: paths.payment_methods.list, icon: 'payment_methods' },
+  { key: 'clients', title: 'Clientes', href: paths.clients.list, icon: 'clients' },
   { key: 'settings', title: 'Configuraciones', href: paths.dashboard.settings, icon: 'gear-six' },
   { key: 'account', title: 'Cuenta', href: paths.dashboard.account, icon: 'user' },
+  
 ] satisfies NavItemConfig[];
 
 export const navItemsClient = [
@@ -34,5 +36,5 @@ export const navItemsMkt = [
     href: paths.dashboard.aprobacionline,
     icon: 'fac-online',
   },
-  { key: 'account', title: 'Cuenta', href: paths.dashboard.account, icon: 'user' },
+  { key: 'client', title: 'Clientes', href: paths.clients.list, icon: 'clients' },
 ] satisfies NavItemConfig[];

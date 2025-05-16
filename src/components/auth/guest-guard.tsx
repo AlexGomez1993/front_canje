@@ -30,10 +30,10 @@ export function GuestGuard({ children }: GuestGuardProps): React.JSX.Element | n
     if (user) {
       if (user.rol_id == 1) {
         logger.debug('[GuestGuard]: Usuario TI Logueado, redirigiendo al Dashboard');
-        router.replace(paths.dashboard.overview);
+        router.replace(paths.campaigns.list);
       } else if (user.rol_id == 3) {
-        logger.debug('[GuestGuard]: Usuario Mkt Logueado, redigiriendo al Reglamento');
-        router.replace(paths.dashboard.integrations);
+        logger.debug('[GuestGuard]: Usuario Mkt Logueado, redigiriendo al modulo de facturas');
+        router.replace(paths.dashboard.customers);
       } else {
         logger.debug('[GuestGuard]: Cliente Logueado, redigiriendo al Inicio');
         router.replace(paths.dashboard.home_client);

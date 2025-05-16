@@ -27,8 +27,18 @@ axiosClient.interceptors.response.use(
     if (error.response && (error.response.status === 401 || error.response.status === 403)) {
       console.log('Token no válido o sesión expirada. Realizar logout.');
       alert('Token no válido o sesión expirada. Realizar logout.');
+      const userString = localStorage.getItem('user');
+
+      if(userString){
+        var user = JSON.parse(userString);
+      }
       await authClient.signOut();
-      window.location.href = '/auth/sign-in';
+      if(user.rol_id==1 || user.rol_id==3){
+        window.location.href = '/auth/sign-in';
+      }else{
+        window.location.href = '/auth/sign-in-client';
+      }        
+      
     }
     return Promise.reject(error);
   }
