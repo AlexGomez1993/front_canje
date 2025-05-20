@@ -149,9 +149,9 @@ export default function FacturaForm() {
           campania_id: campanias[0].id || 0,
           campania_nombre: campanias[0].nombre || undefined,
           campania_tipoConfig: campanias[0].configuracion?.descripcion || 0,
-          promocion_id: campanias[0].promociones![0].id || 0,
-          promocion_nombre: campanias[0].promociones![0].nombre || '',
-          promocion_montominimo: campanias[0].promociones![0].montominimo || 0,
+          promocion_id: campanias[0].promociones ? campanias[0].promociones[0].id : 0,
+          promocion_nombre: campanias[0].promociones ? campanias[0].promociones[0].nombre : '',
+          promocion_montominimo: campanias[0].promociones ? campanias[0].promociones[0].montominimo : 0,
           forma_pago: 0,
         }
       ]);
