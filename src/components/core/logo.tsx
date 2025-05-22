@@ -30,8 +30,8 @@ export function Logo({
   
   // Rutas diferentes para cada tema
   const logoUrl = color === 'light' 
-    ? '/assets/logoscala.png' 
-    : '/assets/logoscala.png';
+    ? '/assets/scala.png' 
+    : '/assets/scala.png';
 
   return (
     <Box
