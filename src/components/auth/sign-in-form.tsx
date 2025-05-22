@@ -69,63 +69,65 @@ export function SignInForm(): React.JSX.Element {
   return (
     <Box
       sx={{
-        minHeight: '100vh',
+        position: 'fixed',
+        top: 0,
+        left: 0,
         width: '100vw',
+        height: '100vh',
         backgroundImage: 'url(/assets/fondo-scala.png)',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        p: 0.5,
-        position: 'fixed',
-        top: 0,
-        left: 0,
+        p: 2,
       }}
     >
       <Box
         sx={{
           display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
-          gap: 4,
-          maxWidth: 800,
+          justifyContent: 'center',
           width: '100%',
+          maxWidth: 800,
           position: 'relative',
         }}
       >
-        <Box
-        component="img"
-        src="/assets/logoscala.png"
-        alt="Logo"
-        sx={{
-          width: 110,
-          height: 160,
-          borderRadius: 2,
-          boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
-          transform: 'translateY(15px)', // Ajuste fino de alineación vertical
-          flexShrink: 0,
-          '@media (max-width: 400px)': {
-            transform: 'translateY(0)',
-            marginBottom: 2,
-            width: 100,
-            height: 140
-          }
-        }}
-      />
         <Stack
           spacing={3}
           sx={{
             background: 'linear-gradient(155deg, rgba(51,0,27,0.9) 0%, rgba(190, 9, 85, 0.7) 100%)',
             borderRadius: 3,
-            p: 4,
-            boxShadow: '0 12px 40px rgba(0, 0, 0, 0.4)',
-            width: '100%',
+            px: 4,
+            py: 2,
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
             maxWidth: 450,
+            width: '100%',
+            mx: 'auto',
             color: 'white',
-            backdropFilter: 'blur(8px)',
-            border: '1px solid rgba(255,255,255,0.15)',
+            backdropFilter: 'blur(4px)',
+            border: '1px solid rgba(255,255,255,0.1)',
           }}
         >
+          <Box
+            component="img"
+            src="/assets/scala.png"
+            alt="Logo"
+            sx={{
+              width: 100,
+              mx: 'auto',
+              height: 100,
+              borderRadius: 2,
+              transform: 'translateY(15px)',
+              flexShrink: 0,
+              '@media (max-width: 400px)': {
+                transform: 'translateY(0)',
+                width: 100,
+                height: 100,
+              },
+            }}
+          />
           <Typography
             variant="h4"
             sx={{
@@ -140,7 +142,7 @@ export function SignInForm(): React.JSX.Element {
           <Divider sx={{ borderColor: 'rgba(255,255,255,0.2)' }} />
 
           <form onSubmit={handleSubmit(onSubmit)}>
-          
+
             <Stack spacing={2}>
               <Controller
                 control={control}
