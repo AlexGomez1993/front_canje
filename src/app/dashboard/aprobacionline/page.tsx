@@ -499,6 +499,8 @@ const FacturasTable = () => {
         const saldoCamPromo = saldosCliente.find((s: any) => s.campania_id == selectedCampania!.id && s.promocion_id == promocionSeleccionadaId)
         if (saldoCamPromo) {
           setSaldo(saldoCamPromo.saldo);
+        }else{
+          setSaldo(0);
         }
 
       } else {
