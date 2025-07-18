@@ -19,7 +19,7 @@ const clienteSchema = z.object({
   apellidos: z.string().min(1, 'Requerido'),
   ciRuc: z.string().min(1),
   email: z.string().email('Correo inválido').optional(),
-  direccion: z.string().optional(),
+  direccion: z.string().min(1, 'Requerido'),
   fechaNacimiento: z.string().min(1, 'Requerido'),
   sexo: z.union([z.literal(1), z.literal(2)]),
   telefono: z.string().optional(),
